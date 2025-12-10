@@ -4,7 +4,7 @@ class ActivitiesController < ApplicationController
   before_action :require_authentication
 
   def index
-    @query = params[:q].to_s.strip
+    @search_query = params[:q].to_s.strip
     @activities = base_scope
                     .then { |scope| apply_query(scope) }
                     .includes(subject: [:topic, :message])
@@ -26,10 +26,10 @@ class ActivitiesController < ApplicationController
   end
 
   def apply_query(scope)
-    return scope if @query.blank?
+    return scope if @search_query.blank?
 
     scope.joins("INNER JOIN notes ON notes.id = activities.subject_id AND activities.subject_type = 'Note'")
-         .where("notes.body ILIKE ?", "%#{@query}%")
+         .where("notes.body ILIKE ?", "%#{@search_query}%")
   end
 
   def mark_shown_as_read!(activities)

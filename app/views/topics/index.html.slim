@@ -1,6 +1,6 @@
 - content_for :title, "PostgreSQL Hackers Archive"
 
-= render partial: "sidebar", locals: { available_note_tags: @available_note_tags }
+= render partial: "sidebar", locals: { available_note_tags: @available_note_tags, search_query: @search_query }
 
 #new-topics-banner
   = render partial: "new_topics_banner", locals: { count: @new_topics_count, viewing_since: @viewing_since }

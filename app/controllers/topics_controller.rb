@@ -3,6 +3,7 @@ class TopicsController < ApplicationController
   before_action :require_authentication, only: [:aware, :aware_bulk, :aware_all, :read_all]
 
   def index
+    @search_query = nil
     base_query = Topic.includes(:creator)
     base_query = apply_filters(base_query)
 
@@ -84,11 +85,11 @@ class TopicsController < ApplicationController
   end
 
   def search
-    @query = params[:q].to_s.strip
+    @search_query = params[:q].to_s.strip
 
-    base_query = if @query.present?
+    base_query = if @search_query.present?
                    Topic.joins(:messages)
-                        .where("topics.title ILIKE ? OR messages.body ILIKE ?", "%#{@query}%", "%#{@query}%")
+                        .where("topics.title ILIKE ? OR messages.body ILIKE ?", "%#{@search_query}%", "%#{@search_query}%")
                         .distinct
                         .includes(:creator)
                  else

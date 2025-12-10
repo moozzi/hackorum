@@ -4,7 +4,7 @@
       h3.sidebar-heading Search
       .sidebar-search.sidebar-content
         = form_with url: search_topics_path, method: :get, local: true do |f|
-          = f.text_field :q, placeholder: "Search topics and messages...", class: "search-input", value: @search_query
+          = f.text_field :q, placeholder: "Search topics and messages...", class: "search-input", value: search_query
           = f.submit "Search", class: "search-button"
 
     .sidebar-section
@@ -30,6 +30,3 @@
           ul.quick-filters
             - @available_note_tags.each do |tag, count|
               li = link_to "##{tag} (#{count})", topics_path(note_tag: tag)
-
-
-

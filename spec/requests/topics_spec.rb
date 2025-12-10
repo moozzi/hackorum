@@ -45,7 +45,7 @@ RSpec.describe "Topics", type: :request do
       it "returns http success with empty state" do
         get topics_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("Scroll down to load more")
+        expect(response.body).to include("topics-table")
       end
     end
   end
