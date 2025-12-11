@@ -158,6 +158,14 @@
   }
 }
 
+.topic-icon-reading {
+  background-color: var(--color-bg-activity-team);
+  
+  .topic-icon-badge {
+    background-color: var(--color-bg-activity-team);
+  }
+}
+
 .activity-team {
   background-color: var(--color-bg-activity-team);
   
