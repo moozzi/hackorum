@@ -8,6 +8,9 @@ dev: ## Start dev stack (foreground)
 dev-detach: ## Start dev stack in background
 	$(COMPOSE) up -d --build
 
+dev-prod-detach: ## Start dev stack but run Rails in production mode (uses dev compose & env)
+	RAILS_ENV=production NODE_ENV=production RAILS_SERVE_STATIC_FILES=1 RAILS_LOG_TO_STDOUT=1 FORCE_SSL=false $(COMPOSE) up -d --build
+
 down: ## Stop dev stack
 	$(COMPOSE) down
 

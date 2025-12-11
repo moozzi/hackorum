@@ -28,14 +28,15 @@ services:
     env_file:
       - .env.development
     environment:
-      RAILS_ENV: development
-      NODE_ENV: development
+      RAILS_ENV: ${RAILS_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-hackorum}:${POSTGRES_PASSWORD:-hackorum}@db:5432/${POSTGRES_DB:-hackorum_development}}
       PGHOST: db
       PGPORT: 5432
       PGUSER: ${POSTGRES_USER:-hackorum}
       PGPASSWORD: ${POSTGRES_PASSWORD:-hackorum}
       PGDATABASE: ${POSTGRES_DB:-hackorum_development}
+      FORCE_SSL: ${FORCE_SSL:-false}
     volumes:
       - .:/app
       - bundle:/usr/local/bundle
@@ -56,7 +57,7 @@ services:
       - .env.development
     command: ["bundle", "exec", "ruby", "script/imap_idle.rb"]
     environment:
-      RAILS_ENV: development
+      RAILS_ENV: ${RAILS_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-hackorum}:${POSTGRES_PASSWORD:-hackorum}@db:5432/${POSTGRES_DB:-hackorum_development}}
       PGHOST: db
       PGPORT: 5432
