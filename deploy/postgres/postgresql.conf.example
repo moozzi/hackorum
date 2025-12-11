@@ -1,12 +1,16 @@
+listen_addresses = '*'
+
+# Memory and planner
 shared_buffers = 4GB
 effective_cache_size = 12GB
 work_mem = 32MB
 maintenance_work_mem = 1GB
 
+# WAL and archiving
 wal_level = replica
 wal_compression = on
 archive_mode = on
 archive_timeout = 60s
-archive_command = 'test ! -f /var/lib/postgresql/wal-archive/%f && cp %p /var/lib/postgresql/wal-archive/%f' # keep && unescaped so the shell runs both commands
+archive_command = 'test ! -f /var/lib/postgresql/wal-archive/%f && cp %p /var/lib/postgresql/wal-archive/%f'
 max_wal_size = 8GB
 min_wal_size = 2GB
