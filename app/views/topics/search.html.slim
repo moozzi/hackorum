@@ -21,7 +21,7 @@
       - if @topics.size == 25
         - last_topic = @topics.last
         - cursor = "#{last_topic.last_activity.iso8601}_#{last_topic.id}"
-        = turbo_frame_tag "pagination", src: search_topics_path(q: @search_query, cursor: cursor, viewing_since: @viewing_since.iso8601, format: :turbo_stream), loading: :lazy do
+        = turbo_frame_tag "pagination", src: search_topics_path(q: @search_query, cursor: cursor, viewing_since: @viewing_since.iso8601, longpage: @current_longpage, format: :turbo_stream), loading: :lazy do
           .loading-indicator Loading more results...
   - else
     .no-results

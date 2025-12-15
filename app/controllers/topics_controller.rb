@@ -90,16 +90,19 @@ class TopicsController < ApplicationController
   def search
     @search_query = params[:q].to_s.strip
 
-    base_query = topics_base_query(search_query: @search_query)
-
-    apply_cursor_pagination(base_query)
-    @new_topics_count = 0
+    if @search_query.present?
+      load_cached_search_results
+    else
+      base_query = topics_base_query(search_query: @search_query)
+      apply_cursor_pagination(base_query)
+      @new_topics_count = 0
+    end
 
     preload_participation_flags if user_signed_in?
 
     respond_to do |format|
       format.html
-      format.turbo_stream { render :index }
+      format.turbo_stream { render :search }
     end
   end
 
@@ -591,6 +594,81 @@ class TopicsController < ApplicationController
     notes.each do |note|
       key = note.message_id || :thread
       @notes_by_message[key] << note
+    end
+  end
+
+  def load_cached_search_results
+    @viewing_since = viewing_since_param
+    longpage = params[:longpage].to_i
+    cache = SearchResultCache.new(query: @search_query, scope: "title_body", viewing_since: @viewing_since, longpage: longpage)
+
+    result = cache.fetch do |limit, offset|
+      build_search_query(@search_query)
+        .joins(:messages)
+        .where(messages: { created_at: ..@viewing_since })
+        .group('topics.id')
+        .select('topics.id, topics.creator_id, MAX(messages.created_at) as last_activity')
+        .order('MAX(messages.created_at) DESC, topics.id DESC')
+        .limit(limit)
+        .offset(offset)
+        .load
+    end
+
+    entries = result[:entries] || []
+    sliced = slice_cached_entries(entries, params[:cursor])
+
+    if sliced[:entries].empty? && entries.size >= SearchResultCache::LONGPAGE_SIZE
+      longpage += 1
+      cache = SearchResultCache.new(query: @search_query, scope: "title_body", viewing_since: @viewing_since, longpage: longpage)
+      next_result = cache.fetch do |limit, offset|
+        build_search_query(@search_query)
+          .joins(:messages)
+          .where(messages: { created_at: ..@viewing_since })
+          .group('topics.id')
+          .select('topics.id, topics.creator_id, MAX(messages.created_at) as last_activity')
+          .order('MAX(messages.created_at) DESC, topics.id DESC')
+          .limit(limit)
+          .offset(offset)
+          .load
+      end
+      entries = next_result[:entries] || []
+      sliced = slice_cached_entries(entries, params[:cursor])
+    end
+
+    @current_longpage = longpage
+    @topics = hydrate_topics_from_entries(sliced[:entries])
+    @topics = [] unless @topics
+    @new_topics_count = 0
+  end
+
+  def slice_cached_entries(entries, cursor_param)
+    return { entries: entries.first(25) } unless cursor_param.present?
+
+    cursor_time_str, cursor_id_str = cursor_param.split('_')
+    cursor_time = Time.zone.parse(cursor_time_str)
+    cursor_id = cursor_id_str.to_i
+
+    start_index = entries.find_index do |entry|
+      entry_time = entry[:last_activity]
+      next false unless entry_time
+      (entry_time < cursor_time) || (entry_time == cursor_time && entry[:id].to_i < cursor_id)
+    end
+
+    start_index ||= entries.size
+    { entries: entries.drop(start_index).first(25) }
+  end
+
+  def hydrate_topics_from_entries(entries)
+    ids = entries.map { |e| e[:id] }
+    return [] if ids.empty?
+
+    topics_map = Topic.includes(:creator).where(id: ids).index_by(&:id)
+    entries.filter_map do |entry|
+      topic = topics_map[entry[:id]]
+      next unless topic
+      last_activity = entry[:last_activity]
+      topic.define_singleton_method(:last_activity) { last_activity }
+      topic
     end
   end
 end
