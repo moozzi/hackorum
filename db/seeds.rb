@@ -800,6 +800,56 @@ six_participants[1..].each_with_index do |ali, idx|
   )
 end
 
+# Extra topics to fill multiple pages with variety
+extra_topics = []
+(1..50).each do |i|
+  creator = [alice_alias, bob_alias, carol_alias, dave_alias][i % 4]
+  created_at = now - (15.days + i.hours)
+  topic = Topic.create!(
+    title: "Archive sampler #{i}",
+    creator: creator,
+    created_at: created_at,
+    updated_at: created_at
+  )
+
+  msgs = []
+  msgs << create_message(
+    topic: topic,
+    sender: creator,
+    subject: topic.title,
+    body: "Sampler thread #{i} kickoff with creator #{creator.name}.",
+    created_at: created_at,
+    message_id_suffix: "sampler-#{i}-1"
+  )
+  msgs << create_message(
+    topic: topic,
+    sender: [alice_alias, bob_alias, carol_alias, dave_alias][(i + 1) % 4],
+    subject: "Re: #{topic.title}",
+    body: "Follow-up #{i}a to keep paging realistic.",
+    created_at: created_at + 2.hours,
+    reply_to: msgs.last,
+    message_id_suffix: "sampler-#{i}-2"
+  )
+  msgs << create_message(
+    topic: topic,
+    sender: [alice_alias, bob_alias, carol_alias, dave_alias][(i + 2) % 4],
+    subject: "Re: #{topic.title}",
+    body: "Follow-up #{i}b with another participant.",
+    created_at: created_at + 4.hours,
+    reply_to: msgs.last,
+    message_id_suffix: "sampler-#{i}-3"
+  )
+
+  # Mix awareness/read states for coverage
+  if i % 4 == 0
+    mark_read_until(user: alice_user, topic: topic, message: msgs.last, timestamp: created_at + 5.hours)
+  elsif i % 3 == 0
+    mark_aware_until(user: bob_user, topic: topic, message: msgs.last, timestamp: created_at + 5.hours)
+  end
+
+  extra_topics << { topic: topic, messages: msgs }
+end
+
 # Threads to exercise all smart_time_display branches
 recent_topic = Topic.create!(
   title: "Recent activity thread",
@@ -906,6 +956,18 @@ carol_notes.create!(
   message: moderate_msgs_1[5],
   body: "Pooling experiments look good; consider adaptive target.\n@ExampleCompany let's benchmark with PG16"
 )
+
+# Notes on extra sampler topics for visibility across pages
+extra_topics.each_with_index do |entry, idx|
+  next unless (idx % 5).zero?
+  builder = [alice_notes, bob_notes, carol_notes][idx % 3]
+  message = entry[:messages][1] || entry[:messages].last
+  builder.create!(
+    topic: entry[:topic],
+    message: message,
+    body: "Sampler note ##{idx + 1} on #{entry[:topic].title}.\n@ExampleCompany follow-up #{idx + 1}"
+  )
+end
 
 timestamp_now = Time.current
 
