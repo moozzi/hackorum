@@ -40,6 +40,8 @@ services:
       PGUSER: ${POSTGRES_USER:-postgres}
       PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
       PGDATABASE: ${POSTGRES_DB:-hackorum}
+      # Run Solid Queue supervisor inside Puma so background jobs (emails, etc.) get processed.
+      SOLID_QUEUE_IN_PUMA: "1"
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       # Mail configuration
       APP_HOST: ${APP_HOST}
