@@ -8,6 +8,27 @@
   margin-bottom: var(--spacing-8);
 }
 
+.sidebar-section summary.sidebar-heading {
+  list-style: none;
+  display: block;
+  cursor: pointer;
+}
+
+.sidebar-section summary.sidebar-heading::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-section summary.sidebar-heading::after {
+  content: "▾";
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-left: var(--spacing-2);
+}
+
+.sidebar-section:not([open]) summary.sidebar-heading::after {
+  content: "▸";
+}
+
 .sidebar-content {
   padding: var(--spacing-3);
 }
@@ -36,4 +57,3 @@
     text-decoration: underline;
   }
 }
-

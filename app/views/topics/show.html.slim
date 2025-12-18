@@ -2,20 +2,21 @@
 
 - content_for :sidebar do
   .sidebar
-    .sidebar-section
-      h3.sidebar-heading Participants
-      - if @participants.present?
-        .participants-list
-          - max_participants = 12
-          - @participants.first(max_participants).each do |participant|
-            = render partial: "participant_row", locals: { participant: participant, avatar_size: 40 }
-          - if @participants.size > max_participants
-            .participant-more "+ #{(@participants.size - max_participants)} more"
-      - else
-        p No participants yet
+    details.sidebar-section open=true
+      summary.sidebar-heading Participants
+      .sidebar-section
+        - if @participants.present?
+          .participants-list
+            - max_participants = 12
+            - @participants.first(max_participants).each do |participant|
+              = render partial: "participant_row", locals: { participant: participant, avatar_size: 40 }
+            - if @participants.size > max_participants
+              .participant-more "+ #{(@participants.size - max_participants)} more"
+        - else
+          p No participants yet
 
-    .sidebar-section
-      h3.sidebar-heading Thread Outline
+    details.sidebar-section open=true
+      summary.sidebar-heading Thread Outline
       - if @thread_outline.present?
         .thread-outline
           - @thread_outline.chunk_while { |a, b| a[:branch_segment_index] == b[:branch_segment_index] }.each do |segment|
