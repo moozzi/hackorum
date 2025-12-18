@@ -10,6 +10,17 @@ class Attachment < ApplicationRecord
   def decoded_body
     Base64.decode64(body) if body.present?
   end
+
+  def decoded_body_utf8
+    raw = decoded_body
+    return unless raw
+
+    utf8 = raw.dup
+    utf8.force_encoding("UTF-8")
+    return utf8 if utf8.valid_encoding?
+
+    raw.encode("UTF-8", invalid: :replace, undef: :replace, replace: "\uFFFD")
+  end
   
   private
   

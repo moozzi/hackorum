@@ -60,7 +60,7 @@
                   = link_to "Download", attachment_path(attachment), class: "attachment-download", download: attachment.file_name, data: { turbo: false }
               pre.attachment-content
                 code.language-diff
-                  = attachment.decoded_body
+                  = attachment.decoded_body_utf8
           - else
             .attachment
               .attachment-info
