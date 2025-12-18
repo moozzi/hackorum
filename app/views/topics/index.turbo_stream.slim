@@ -10,7 +10,7 @@
   - last_topic = @topics.last
   - cursor = "#{last_topic.last_activity.iso8601}_#{last_topic.id}"
   = turbo_stream.replace "pagination" do
-    = turbo_frame_tag "pagination", src: topics_path(cursor: cursor, viewing_since: @viewing_since.iso8601, format: :turbo_stream), loading: :lazy do
+    = turbo_frame_tag "pagination", src: topics_path(cursor: cursor, viewing_since: @viewing_since.iso8601, filter: params[:filter], team_id: params[:team_id], note_tag: params[:note_tag], format: :turbo_stream), loading: :lazy do
       .loading-indicator Loading more topics...
 - elsif params[:cursor].present?
   = turbo_stream.remove "pagination"
