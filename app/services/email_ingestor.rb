@@ -189,8 +189,8 @@ class EmailIngestor
       ref_str = matches.last&.first || ref_str
     end
 
-    # Allow common msg-id characters and strip anything else.
-    ref_str.gsub(/[^A-Za-z0-9.@_+%-]/, '')
+    # Allow RFC 5322 msg-id atext plus dot and @, strip anything else.
+    ref_str.gsub(/[^A-Za-z0-9.!#$%&'*+\/=?^_`{|}~@-]/, '')
   end
 
   def fallback_thread_lookup(subject, message_id:, references:, sent_at:)
