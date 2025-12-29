@@ -13,6 +13,7 @@ dev-prod-detach: ## Start dev stack but run Rails in production mode (uses dev c
 
 down: ## Stop dev stack
 	$(COMPOSE) down
+	rm -f tmp/pids/server.pid
 
 shell: ## Open a shell in the web container
 	$(COMPOSE) exec web bash
