@@ -248,6 +248,11 @@
   gap: 6px;
 }
 
+.outline-avatar-link {
+  display: inline-flex;
+  text-decoration: none;
+}
+
 .outline-avatar {
   width: 24px;
   height: 24px;

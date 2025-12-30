@@ -26,6 +26,10 @@ class Person < ApplicationRecord
     end
   end
 
+  def display_name
+    default_alias&.name || aliases.order(:created_at).first&.name || "Unknown"
+  end
+
   def self.find_by_email(email)
     Alias.by_email(email).where.not(person_id: nil).includes(:person).first&.person
   end

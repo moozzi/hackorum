@@ -39,6 +39,10 @@ Rails.application.routes.draw do
     post :mark_all_read, on: :collection
   end
   resources :notes, only: [:create, :update, :destroy]
+  get "person/*email/contributions/:year", to: "people#contributions", as: :person_contributions, format: false
+  get "person/*email/activity/:date", to: "people#daily_activity", as: :person_activity, format: false
+  get "person/*email", to: "people#show", as: :person, format: false
+  get "people/*email", to: redirect { |params, _req| "/person/#{params[:email]}" }, format: false
 
   # Authentication
   resource :session, only: [:new, :create, :destroy]

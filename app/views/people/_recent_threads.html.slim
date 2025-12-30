@@ -1,0 +1,28 @@
+.profile-section
+  - if @activity_date
+    h2 Threads on #{@activity_date.strftime('%B %d, %Y')}
+  - else
+    h2 Recent threads
+  - if @activity_entries.any?
+    table.activity-table
+      thead
+        tr
+          th Activity
+          th Thread
+          th Last active
+          th
+      tbody
+        - @activity_entries.each do |entry|
+          - topic = entry[:topic]
+          tr
+            td = entry[:started] ? "Started thread" : "Participated"
+            td
+              = link_to topic.title, topic_path(topic), class: "activity-topic"
+            td
+              = time_ago_in_words(entry[:last_at])
+              |  ago
+            td
+              - if entry[:has_patch]
+                span.activity-tag Patch
+  - else
+    p No recent activity.
