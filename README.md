@@ -23,13 +23,17 @@ Useful commands:
 * Rails console: `docker compose -f docker-compose.dev.yml exec web bin/rails console`
 * Migrations/seeds: `docker compose -f docker-compose.dev.yml exec web bin/rails db:prepare`
 * Tests: `docker compose -f docker-compose.dev.yml exec web bundle exec rspec`
+* Import a public DB dump: `make db-import DUMP=/path/to/public-YYYY-MM.sql.gz`
 
 Makefile shortcuts:
 * `make dev` / `make dev-detach` / `make down`
 * `make shell` / `make console` / `make logs`
 * `make test`
 * `make db-migrate` / `make db-reset`
+* `make db-import`
 * `make psql`
+
+Public database dumps (schema + public data) are published at https://dumps.hackorum.dev/
 
 ### Incoming email simulator
 

@@ -1,6 +1,6 @@
 COMPOSE ?= docker compose -f docker-compose.dev.yml
 
-.PHONY: dev dev-detach down shell console test imap logs db-migrate db-reset psql sim-email-once sim-email-stream
+.PHONY: dev dev-detach down shell console test imap logs db-migrate db-reset db-import stats psql sim-email-once sim-email-stream
 
 dev: ## Start dev stack (foreground)
 	$(COMPOSE) up --build
@@ -29,6 +29,18 @@ db-migrate: ## Run db:migrate
 
 db-reset: ## Drop and prepare (create/migrate)
 	$(COMPOSE) run --rm web bin/rails db:drop && bin/rails db:prepare
+
+db-import: ## Drop dev DB and import a public dump (env: DUMP=/path/to/public-YYYY-MM.sql.gz)
+	@if [ -z "$(DUMP)" ]; then echo "Set DUMP=/path/to/public-YYYY-MM.sql.gz"; exit 1; fi
+	$(COMPOSE) exec -T db bash -lc 'psql -U $${POSTGRES_USER:-hackorum} -d postgres -c "DROP DATABASE IF EXISTS $${POSTGRES_DB:-hackorum_development};" -c "CREATE DATABASE $${POSTGRES_DB:-hackorum_development};"'
+	@if echo "$(DUMP)" | grep -qE '\.gz$$'; then \
+	  gzip -cd "$(DUMP)" | $(COMPOSE) exec -T db bash -lc 'psql -U $${POSTGRES_USER:-hackorum} -d $${POSTGRES_DB:-hackorum_development}'; \
+	else \
+	  cat "$(DUMP)" | $(COMPOSE) exec -T db bash -lc 'psql -U $${POSTGRES_USER:-hackorum} -d $${POSTGRES_DB:-hackorum_development}'; \
+	fi
+
+stats: ## Rebuild stats (env: GRANULARITY=all|daily|weekly|monthly)
+	$(COMPOSE) exec web bundle exec ruby script/build_stats.rb $${GRANULARITY:-all}
 
 psql: ## Open psql against the dev DB
 	COMPOSE_PROFILES=tools $(COMPOSE) run --rm psql
