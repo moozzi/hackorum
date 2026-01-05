@@ -116,7 +116,7 @@ ARGV.each do |fn|
     f.each_line do |line|
 
       # Some old lines contain illegal characters
-      line = line.force_encoding("ISO-8859-1").encode("utf-8", replace: nil)
+      line = line.encode("utf-8", :invalid => :replace)
 
       # all new messages refer to lists.postgresql.org, but not old emails
       # And we can't simply check for From, as it also matches inline attachments containing git diffs

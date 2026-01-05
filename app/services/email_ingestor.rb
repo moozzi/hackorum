@@ -9,15 +9,18 @@ class EmailIngestor
     return nil unless message_id
     sent_at = sanitize_email_date(m.date, m[:date], message_id)
 
-    return nil if message_id && Message.find_by_message_id(message_id)
+    body = normalize_body(extract_body(m))
+    existing_message = Message.find_by_message_id(message_id)
+    if existing_message
+      existing_message.update_columns(body: body)
+      return existing_message
+    end
 
     import_log = ''
 
     from = build_from_aliases(m, sent_at)
     to = create_users(m[:to], sent_at)
     cc = create_users(m[:cc], sent_at)
-
-    body = extract_body(m)
 
     subject = m.subject || 'No title'
 
@@ -29,8 +32,6 @@ class EmailIngestor
 
     topic = reply_to_msg ? reply_to_msg.topic : Topic.create!(creator: from[0], title: subject, created_at: sent_at)
     import_log = nil if import_log == ''
-
-    body = normalize_body(body)
 
     msg = Message.create!(
       topic: topic,
