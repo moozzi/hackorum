@@ -24,6 +24,8 @@ Useful commands:
 * Migrations/seeds: `docker compose -f docker-compose.dev.yml exec web bin/rails db:prepare`
 * Tests: `docker compose -f docker-compose.dev.yml exec web bundle exec rspec`
 * Import a public DB dump: `make db-import DUMP=/path/to/public-YYYY-MM.sql.gz`
+* If you need private table definitions too, apply `private-schema-YYYY-MM.sql.gz` after the import:
+  `gzip -cd /path/to/private-schema-YYYY-MM.sql.gz | docker compose -f docker-compose.dev.yml exec -T db psql`
 
 Makefile shortcuts:
 * `make dev` / `make dev-detach` / `make down`

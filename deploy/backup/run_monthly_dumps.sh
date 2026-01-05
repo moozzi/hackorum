@@ -41,6 +41,9 @@ docker compose -f docker-compose.yml exec -T db bash -lc \
      --format=plain --no-owner --no-privileges${EXCLUDE_ARGS_STR} \
      | gzip -9 > /dumps/public/public-${STAMP}.sql.gz \
   && pg_dump -U \${POSTGRES_USER:-postgres} -d \${POSTGRES_DB:-hackorum} \
+     --format=plain --schema-only --no-owner --no-privileges${INCLUDE_ARGS_STR} \
+     | gzip -9 > /dumps/public/private-schema-${STAMP}.sql.gz \
+  && pg_dump -U \${POSTGRES_USER:-postgres} -d \${POSTGRES_DB:-hackorum} \
      --format=plain --data-only --no-owner --no-privileges${INCLUDE_ARGS_STR} \
      | gzip -9 > /dumps/private/private-${STAMP}.sql.gz"
 

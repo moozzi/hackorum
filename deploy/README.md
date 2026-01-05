@@ -98,6 +98,7 @@ Access:
 ## Backups (monthly SQL dumps)
 The database dumps are split into public and private data, written to a Docker volume mounted at `/dumps` inside the Postgres container. Each month overwrites the same two files:
 - `public/public-YYYY-MM.sql.gz` (full schema + data, excluding private tables)
+- `public/private-schema-YYYY-MM.sql.gz` (schema-only for private tables)
 - `private/private-YYYY-MM.sql.gz` (data-only for private tables)
 
 The table list lives in `deploy/backup/private_tables.txt` and is used for both dumps.
