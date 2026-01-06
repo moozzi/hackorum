@@ -9,6 +9,7 @@
 
 @import "components/form.css";
 @import "components/navigation.css";
+@import "components/session.css";
 @import "components/sidebar.css";
 @import "components/topics.css";
 @import "components/avatars.css";
@@ -17,4 +18,5 @@
 @import "components/notes.css";
 @import "components/activities.css";
 @import "components/profile.css";
+@import "components/settings.css";
 @import "components/stats.css";
