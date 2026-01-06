@@ -13,7 +13,6 @@ html data-theme="light"
     = csp_meta_tag
     = yield :head
     link[rel="icon" href="/icon.png" type="image/png"]
-    link[rel="icon" href="/icon.svg" type="image/svg+xml"]
     link[rel="apple-touch-icon" href="/icon.png"]
     script
       |
@@ -37,7 +36,9 @@ html data-theme="light"
     nav.main-navigation
     .nav-container
       .nav-brand
-        = link_to "Hackorum", root_path, class: "brand-link"
+        = link_to root_path, class: "brand-link" do
+          img.brand-icon src="/icon.png" alt="Hackorum" width="24" height="24"
+          span.brand-text Hackorum
         span.tagline PostgreSQL Hackers Archive
       .nav-links
         = link_to "Topics", topics_path, class: "nav-link"
