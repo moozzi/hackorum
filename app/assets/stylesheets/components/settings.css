@@ -132,7 +132,6 @@
   display: block;
 }
 
-/* Settings sidebar navigation */
 .settings-nav {
   display: flex;
   flex-direction: column;
@@ -179,4 +178,126 @@
   height: 1px;
   background-color: var(--color-border);
   margin: var(--spacing-2) 0;
+}
+
+.settings-page .email-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-4);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.settings-page .email-table thead {
+  background: var(--color-bg-sidebar-header);
+}
+
+.settings-page .email-table th {
+  padding: var(--spacing-4);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.settings-page .email-table td {
+  padding: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.settings-page .email-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.settings-page .email-table tbody tr:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.settings-page .email-table td:last-child {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.settings-page .email-table .button-secondary,
+.settings-page .email-table .button-danger {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.settings-page .team-list,
+.settings-page .member-list {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--spacing-4);
+}
+
+.settings-page .team-list li,
+.settings-page .member-list li {
+  padding: var(--spacing-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.settings-page .team-list li:hover,
+.settings-page .member-list li:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.settings-page .team-list a {
+  color: var(--color-text-link);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+  flex: 1;
+}
+
+.settings-page .team-list a:hover {
+  text-decoration: underline;
+}
+
+.settings-page .team-meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.settings-page .member-list li {
+  flex-wrap: wrap;
+}
+
+.settings-page .role-badge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  margin-left: var(--spacing-2);
+}
+
+.settings-page .member-list .button-secondary {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.settings-page .teams-section {
+  margin-bottom: var(--spacing-8);
+}
+
+.settings-page .team-actions,
+.settings-page .invite-section {
+  margin-top: var(--spacing-6);
 }
