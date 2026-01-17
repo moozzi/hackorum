@@ -175,7 +175,7 @@
   & blockquote {
     margin: var(--spacing-3) 0;
     padding-left: var(--spacing-4);
-    border-left: var(--border-width) solid var(--color-border);
+    border-left: 3px solid var(--color-primary-300);
   }
 
   & .quoted-block {
