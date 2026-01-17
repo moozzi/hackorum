@@ -17,6 +17,6 @@ module Hackorum
     config.autoload_lib(ignore: %w[assets tasks])
 
     require_relative "../app/middleware/pending_migration_catcher"
-    config.middleware.insert_before ActionDispatch::ShowExceptions, PendingMigrationCatcher
+    config.middleware.insert_before 0, PendingMigrationCatcher
   end
 end
