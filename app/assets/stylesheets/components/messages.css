@@ -346,3 +346,21 @@ summary.attachment-info {
   white-space: pre-wrap;
   overflow-x: auto;
 }
+
+.message-branch-0 .message-header,
+.message-branch-1 .message-header,
+.message-branch-2 .message-header,
+.message-branch-3 .message-header,
+.message-branch-4 .message-header,
+.message-branch-5 .message-header {
+  border-left-width: 4px;
+  border-left-style: solid;
+  padding-left: calc(var(--spacing-5) - 4px);
+}
+
+.message-branch-0 .message-header { border-left-color: #2563eb; }
+.message-branch-1 .message-header { border-left-color: #7c3aed; }
+.message-branch-2 .message-header { border-left-color: #f59e0b; }
+.message-branch-3 .message-header { border-left-color: #10b981; }
+.message-branch-4 .message-header { border-left-color: #ef4444; }
+.message-branch-5 .message-header { border-left-color: #0ea5e9; }

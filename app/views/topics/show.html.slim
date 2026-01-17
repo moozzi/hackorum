@@ -100,7 +100,7 @@
     details.sidebar-section open=true
       summary.sidebar-heading Thread Outline
       - if @thread_outline.present?
-        .thread-outline
+        .thread-outline data-controller="thread-outline"
           - @thread_outline.chunk_while { |a, b| a[:branch_segment_index] == b[:branch_segment_index] }.each do |segment|
             - first = segment.first
             - first_msg = first[:message]
@@ -199,7 +199,8 @@
     - if user_signed_in? && !first_unread_found && !@read_message_ids&.dig(message.id)
       - is_first_unread = true
       - first_unread_found = true
-    = render 'message', message: message, number: @message_numbers[message.id], is_first_unread: is_first_unread
+    - branch_index = @message_branch_index&.dig(message.id)
+    = render 'message', message: message, number: @message_numbers[message.id], is_first_unread: is_first_unread, branch_index: branch_index
 
 .topic-navigation
   = link_to "← Back to Topics", topics_path, class: "back-link"

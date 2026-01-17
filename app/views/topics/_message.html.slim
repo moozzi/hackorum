@@ -1,4 +1,5 @@
-.message-card id=message_dom_id(message) class=("reply-message" if message.reply_to_id)
+- message_classes = [("reply-message" if message.reply_to_id), ("message-branch-#{local_assigns[:branch_index]}" unless local_assigns[:branch_index].nil?)].compact.join(" ")
+.message-card id=message_dom_id(message) class=message_classes
   - if (mid_anchor = message_id_anchor(message))
     a.message-id-anchor id=mid_anchor aria-hidden="true"
   - if local_assigns[:is_first_unread]

@@ -309,6 +309,11 @@ class TopicsController < ApplicationController
 
     assign_branch_segments!
     @has_multiple_branches = @thread_outline.map { |entry| entry[:branch_segment_index] }.uniq.size > 1
+
+    # Build message_id -> branch_index mapping for message rendering
+    @message_branch_index = @thread_outline.each_with_object({}) do |entry, hash|
+      hash[entry[:message].id] = entry[:branch_index]
+    end
   end
 
   def preload_read_state!

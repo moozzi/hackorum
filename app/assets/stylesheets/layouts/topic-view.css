@@ -209,6 +209,17 @@
 .branch-details.branch-4 { border-left-color: #ef4444; }
 .branch-details.branch-5 { border-left-color: #0ea5e9; }
 
+.outline-item.outline-active {
+  background: var(--color-bg-hover);
+  border-left-width: 4px;
+  font-weight: var(--font-weight-medium);
+}
+
+summary.outline-active {
+  background: var(--color-bg-hover);
+  border-radius: var(--border-radius-sm);
+}
+
 .outline-content {
   display: flex;
   justify-content: space-between;
