@@ -22,10 +22,19 @@ module ProfileActivity
 
   def load_activity_data(scope: nil, year: nil)
     @activity_filters = parse_activity_filters
-    @activity_entries = build_activity_entries(scope: scope, filters: @activity_filters)
+    effective_scope = scope || default_recent_scope
+    @activity_entries = build_activity_entries(scope: effective_scope, filters: @activity_filters)
+    @activity_summary = build_activity_summary(scope: effective_scope, filters: @activity_filters)
+    @activity_period ||= { type: :recent } if scope.nil?
     @contribution_years = contribution_years
     @contribution_year = year || select_contribution_year(@contribution_years)
     @contribution_weeks, @contribution_month_spans = build_contribution_weeks(@contribution_year, filters: @activity_filters)
+  end
+
+  def default_recent_scope
+    ids = person_ids_for_query
+    start_date = 1.month.ago.beginning_of_day
+    Message.where(sender_person_id: ids, created_at: start_date..)
   end
 
   def build_activity_entries(scope: nil, filters: nil)
@@ -71,6 +80,63 @@ module ProfileActivity
     end
 
     entries.first(20)
+  end
+
+  def build_activity_summary(scope: nil, filters: nil)
+    ids = person_ids_for_query
+    return empty_activity_summary if ids.blank?
+
+    scope ||= Message.where(sender_person_id: ids)
+    messages = scope.includes(:topic, :attachments)
+
+    return empty_activity_summary if messages.empty?
+
+    topic_ids = messages.map(&:topic_id).uniq
+    first_message_per_topic = Message.where(topic_id: topic_ids).group(:topic_id).minimum(:id)
+    first_patch_per_topic = Message.joins(:attachments).where(topic_id: topic_ids).group(:topic_id).minimum(:id)
+    own_topic_ids = Topic.where(id: topic_ids, creator_person_id: ids).pluck(:id).to_set
+
+    filter_symbols = filters&.map(&:to_sym)&.to_set
+
+    summary = {
+      total: 0,
+      started_thread: 0,
+      replied_own_thread: 0,
+      replied_other_thread: 0,
+      sent_first_patch: 0,
+      sent_followup_patch: 0
+    }
+
+    messages.each do |message|
+      topic = message.topic
+      next unless topic
+
+      activity_types = compute_activity_types(
+        message: message,
+        topic: topic,
+        first_message_per_topic: first_message_per_topic,
+        first_patch_per_topic: first_patch_per_topic,
+        own_topic_ids: own_topic_ids
+      )
+
+      if filter_symbols.blank? || (activity_types.to_set & filter_symbols).any?
+        summary[:total] += 1
+        activity_types.each { |type| summary[type] += 1 }
+      end
+    end
+
+    summary
+  end
+
+  def empty_activity_summary
+    {
+      total: 0,
+      started_thread: 0,
+      replied_own_thread: 0,
+      replied_other_thread: 0,
+      sent_first_patch: 0,
+      sent_followup_patch: 0
+    }
   end
 
   def compute_activity_types(message:, topic:, first_message_per_topic:, first_patch_per_topic:, own_topic_ids:)
