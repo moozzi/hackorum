@@ -5,6 +5,43 @@
     .team-actions
       = button_to "Delete team", settings_team_path(@team), method: :delete, data: { turbo_confirm: "Delete this team?" }, class: "button-danger"
 
+  .team-settings
+    h2 Team Settings
+    .visibility-setting
+      h3 Visibility
+      - if @can_manage
+        = form_with model: @team, url: settings_team_path(@team), method: :patch, local: true do |f|
+          .form-group
+            .radio-group
+              label
+                = f.radio_button :visibility, "private"
+                span.radio-text
+                  strong Private
+                  span.radio-description Only team members can see this team and mention @#{@team.name}
+              label
+                = f.radio_button :visibility, "visible"
+                span.radio-text
+                  strong Visible
+                  span.radio-description Anyone can see this team, but only members can mention @#{@team.name}
+              label
+                = f.radio_button :visibility, "open"
+                span.radio-text
+                  strong Open
+                  span.radio-description Anyone can see this team and mention @#{@team.name}
+          = f.submit "Save", class: "button-primary"
+      - elsif @is_member
+        p.settings-hint
+          - case @team.visibility
+          - when "private"
+            | This team is <strong>private</strong>. Only members can see it and mention @#{@team.name}.
+          - when "visible"
+            | This team is <strong>visible</strong>. Anyone can see it, but only members can mention @#{@team.name}.
+          - when "open"
+            | This team is <strong>open</strong>. Anyone can see it and mention @#{@team.name}.
+          - unless @can_manage
+            br
+            | Only admins can change this setting.
+
   .team-members
     h2 Members
     - if @team_members.any?
@@ -21,13 +58,14 @@
     - else
       p No members yet.
 
-  .invite-section
-    h2 Add member
-    - unless @can_invite
-      p.settings-hint Only team admins can add members.
-    = form_with url: settings_team_team_members_path(@team), method: :post, local: true do |f|
-      fieldset disabled=(!@can_invite)
-        .form-group
-          = label_tag :username, "Username"
-          = text_field_tag :username, nil, required: true, placeholder: "existing_username"
-        = f.submit "Add", class: "button-primary"
+  - if @is_member
+    .invite-section
+      h2 Add member
+      - unless @can_invite
+        p.settings-hint Only team admins can add members.
+      = form_with url: settings_team_team_members_path(@team), method: :post, local: true do |f|
+        fieldset disabled=(!@can_invite)
+          .form-group
+            = label_tag :username, "Username"
+            = text_field_tag :username, nil, required: true, placeholder: "existing_username"
+          = f.submit "Add", class: "button-primary"

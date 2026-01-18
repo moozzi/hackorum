@@ -14,10 +14,23 @@ class User < ApplicationRecord
   has_many :topic_stars, dependent: :destroy
   has_many :starred_topics, through: :topic_stars, source: :topic
 
+  enum :mention_restriction, { anyone: "anyone", teammates_only: "teammates_only" }, default: :anyone
+
   scope :active, -> { where(deleted_at: nil) }
 
   def primary_alias
     person&.default_alias
+  end
+
+  def mentionable_by?(mentioner)
+    return false unless mentioner
+    return true if anyone?
+    shares_team_with?(mentioner)
+  end
+
+  def shares_team_with?(other_user)
+    return false unless other_user
+    team_ids.intersect?(other_user.team_ids)
   end
 
   validates :username, format: { with: /\A[a-zA-Z0-9_\-\.]+\z/, allow_blank: true }

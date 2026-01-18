@@ -24,25 +24,96 @@ RSpec.describe "Teams", type: :request do
       create(:team_member, team: team, user: member)
     end
 
-    it "redirects guests to sign in" do
-      get settings_team_path(team)
-      expect(response).to redirect_to(new_session_path)
+    context "with private team (default)" do
+      it "redirects guests to sign in" do
+        get settings_team_path(team)
+        expect(response).to redirect_to(new_session_path)
+      end
+
+      it "returns 404 for signed-in non-members" do
+        attach_verified_alias(non_member, email: "non-member@example.com")
+        sign_in(email: "non-member@example.com")
+
+        get settings_team_path(team)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "allows signed-in team members" do
+        attach_verified_alias(member, email: "member@example.com")
+        sign_in(email: "member@example.com")
+
+        get settings_team_path(team)
+        expect(response).to have_http_status(:success)
+      end
     end
 
-    it "returns 404 for signed-in non-members" do
-      attach_verified_alias(non_member, email: "non-member@example.com")
-      sign_in(email: "non-member@example.com")
+    context "with visible team" do
+      before { team.update!(visibility: :visible) }
 
-      get settings_team_path(team)
-      expect(response).to have_http_status(:not_found)
+      it "allows guests to view" do
+        get settings_team_path(team)
+        expect(response).to have_http_status(:success)
+      end
+
+      it "allows non-members to view" do
+        attach_verified_alias(non_member, email: "non-member@example.com")
+        sign_in(email: "non-member@example.com")
+
+        get settings_team_path(team)
+        expect(response).to have_http_status(:success)
+      end
     end
 
-    it "allows signed-in team members" do
+    context "with open team" do
+      before { team.update!(visibility: :open) }
+
+      it "allows guests to view" do
+        get settings_team_path(team)
+        expect(response).to have_http_status(:success)
+      end
+
+      it "allows non-members to view" do
+        attach_verified_alias(non_member, email: "non-member@example.com")
+        sign_in(email: "non-member@example.com")
+
+        get settings_team_path(team)
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
+  describe "PATCH /teams/:id" do
+    let!(:team) { create(:team) }
+    let!(:admin) { create(:user, password: "secret", password_confirmation: "secret") }
+    let!(:member) { create(:user, password: "secret", password_confirmation: "secret") }
+
+    before do
+      create(:team_member, team: team, user: admin, role: "admin")
+      create(:team_member, team: team, user: member, role: "member")
+    end
+
+    it "allows admins to update visibility" do
+      attach_verified_alias(admin, email: "admin@example.com")
+      sign_in(email: "admin@example.com")
+
+      patch settings_team_path(team), params: { team: { visibility: "visible" } }
+      expect(response).to redirect_to(settings_team_path(team))
+      expect(team.reload.visibility).to eq("visible")
+    end
+
+    it "blocks non-admins from updating visibility" do
       attach_verified_alias(member, email: "member@example.com")
       sign_in(email: "member@example.com")
 
-      get settings_team_path(team)
-      expect(response).to have_http_status(:success)
+      patch settings_team_path(team), params: { team: { visibility: "open" } }
+      expect(response).to redirect_to(settings_team_path(team))
+      expect(team.reload.visibility).to eq("private")
+    end
+
+    it "blocks guests from updating visibility" do
+      patch settings_team_path(team), params: { team: { visibility: "open" } }
+      expect(response).to redirect_to(new_session_path)
+      expect(team.reload.visibility).to eq("private")
     end
   end
 

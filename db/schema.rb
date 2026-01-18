@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_17_183400) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_18_124707) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -20,6 +20,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_17_183400) do
   # Note that some types may not work with other database engines. Be careful if changing database.
   create_enum "contributor_type", ["core_team", "committer", "major_contributor", "significant_contributor", "past_major_contributor", "past_significant_contributor"]
   create_enum "team_member_role", ["member", "admin"]
+  create_enum "team_visibility", ["private", "visible", "open"]
+  create_enum "user_mention_restriction", ["anyone", "teammates_only"]
 
   create_table "activities", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -529,6 +531,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_17_183400) do
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.enum "visibility", default: "private", null: false, enum_type: "team_visibility"
   end
 
   create_table "thread_awarenesses", force: :cascade do |t|
@@ -616,6 +619,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_17_183400) do
     t.boolean "admin", default: false, null: false
     t.datetime "deleted_at"
     t.bigint "person_id", null: false
+    t.enum "mention_restriction", default: "anyone", null: false, enum_type: "user_mention_restriction"
     t.index ["deleted_at"], name: "index_users_on_deleted_at"
     t.index ["person_id"], name: "index_users_on_person_id"
     t.index ["username"], name: "index_users_on_username", unique: true

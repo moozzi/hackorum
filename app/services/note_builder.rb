@@ -103,10 +103,24 @@ class NoteBuilder
                when "Team" then teams[reservation.owner_id]
                end
       raise Error, "Unknown mention: @#{name}" unless record
+      validate_mention_permission!(record, name)
       record
     end
 
     mentionables.compact.uniq
+  end
+
+  def validate_mention_permission!(mentionable, name)
+    case mentionable
+    when User
+      unless mentionable.mentionable_by?(author)
+        raise Error, "You cannot mention @#{name} (only their teammates can mention them)"
+      end
+    when Team
+      unless mentionable.mentionable_by?(author)
+        raise Error, "You cannot mention @#{name} (only team members can mention this team)"
+      end
+    end
   end
 
   def fan_out!(note:, mentionables:, mark_author_read:)

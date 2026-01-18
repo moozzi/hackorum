@@ -28,11 +28,12 @@ Rails.application.routes.draw do
     resource :import, only: [:show, :create]
     resource :deletion, only: [:show, :create]
 
-    resources :teams, only: [:index, :show, :create, :destroy] do
+    resources :teams, only: [:index, :show, :create, :update, :destroy] do
       resources :team_members, only: [:create, :destroy]
     end
 
     resource :username, only: [:update]
+    resource :preferences, only: [:update]
     patch "password/current", to: "passwords#update_current", as: :update_current_password
     resources :emails, only: [:create, :destroy] do
       post :primary, on: :member

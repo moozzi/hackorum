@@ -10,3 +10,21 @@
         = f.label :username
         = f.text_field :username, placeholder: "your_name", value: current_user.username
       = f.submit "Save username", class: "button-primary"
+
+  .settings-section
+    h2 Mention Settings
+    p.settings-hint Control who can @mention you in notes.
+    = form_with model: current_user, url: settings_preferences_path, method: :patch, local: true do |f|
+      .form-group
+        .radio-group
+          label
+            = f.radio_button :mention_restriction, "anyone"
+            span.radio-text
+              strong Anyone
+              span.radio-description Any user can @mention you in notes
+          label
+            = f.radio_button :mention_restriction, "teammates_only"
+            span.radio-text
+              strong Teammates only
+              span.radio-description Only users who share a team with you can @mention you
+      = f.submit "Save", class: "button-primary"
