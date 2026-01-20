@@ -15,6 +15,9 @@ module ImportOptions
       opts.on('--update-date', 'Update date of existing messages') do
         options[:update_existing] |= [:date]
       end
+      opts.on('--update-reply-to-message-id', 'Update reply_to_message_id of existing messages') do
+        options[:update_existing] |= [:reply_to_message_id]
+      end
     end.parse!(argv)
 
     options

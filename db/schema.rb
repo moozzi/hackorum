@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_18_124707) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_20_172042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -235,6 +235,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_18_124707) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "sender_person_id", null: false
+    t.string "reply_to_message_id"
     t.index ["body"], name: "index_messages_on_body_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["created_at", "sender_id"], name: "index_messages_on_created_at_and_sender_id"
     t.index ["created_at", "topic_id"], name: "index_messages_on_created_at_and_topic_id"

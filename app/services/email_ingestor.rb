@@ -10,9 +10,12 @@ class EmailIngestor
     sent_at = trust_date ? m.date : sanitize_email_date(m.date, m[:date], message_id)
 
     body = normalize_body(extract_body(m))
+    reply_to_message_id = m.in_reply_to ? clean_reference(m.in_reply_to) : nil
+
     existing_message = Message.find_by_message_id(message_id)
     if existing_message
-      update_existing_message(existing_message, body: body, sent_at: sent_at, update_existing: update_existing)
+      update_existing_message(existing_message, body: body, sent_at: sent_at,
+                              reply_to_message_id: reply_to_message_id, update_existing: update_existing)
       return existing_message
     end
 
@@ -24,7 +27,7 @@ class EmailIngestor
 
     subject = m.subject || 'No title'
 
-    reply_to_msg, import_log = resolve_threading(m, import_log)
+    reply_to_msg, import_log = resolve_threading(m, reply_to_message_id, import_log)
     if fallback_threading && reply_to_msg.nil? && subject.present? && subject.match?(/\A\s*(re|aw|fwd):/i)
       reply_to_msg = fallback_thread_lookup(subject, message_id: message_id, references: m.references, sent_at: sent_at)
       import_log = [import_log, "Resolved by subject fallback"].reject(&:blank?).join(" | ") if reply_to_msg
@@ -43,6 +46,7 @@ class EmailIngestor
       sender: from[0],
       sender_person_id: from[0].person_id,
       reply_to: reply_to_msg,
+      reply_to_message_id: reply_to_message_id,
       subject: subject,
       body: body,
       created_at: sent_at,
@@ -64,7 +68,7 @@ class EmailIngestor
 
   private
 
-  def update_existing_message(message, body:, sent_at:, update_existing:)
+  def update_existing_message(message, body:, sent_at:, reply_to_message_id:, update_existing:)
     return if update_existing.empty?
 
     updates = {}
@@ -78,6 +82,10 @@ class EmailIngestor
       if topic && topic.messages.order(:created_at).first&.id == message.id
         topic.update_columns(created_at: sent_at)
       end
+    end
+
+    if update_existing.include?(:reply_to_message_id) && reply_to_message_id
+      updates[:reply_to_message_id] = reply_to_message_id
     end
 
     message.update_columns(updates) if updates.any?
@@ -127,12 +135,12 @@ class EmailIngestor
     end
   end
 
-  def resolve_threading(m, import_log)
+  def resolve_threading(m, reply_to_message_id, import_log)
     reply_to_msg = nil
 
-    if m.in_reply_to
-      reply_to_msg = Message.find_by_message_id(clean_reference(m.in_reply_to))
-      import_log += "Reply to msg id not found: #{clean_reference(m.in_reply_to)}" unless reply_to_msg
+    if reply_to_message_id
+      reply_to_msg = Message.find_by_message_id(reply_to_message_id)
+      import_log += "Reply to msg id not found: #{reply_to_message_id}" unless reply_to_msg
     end
 
     if m.references && reply_to_msg.nil?
