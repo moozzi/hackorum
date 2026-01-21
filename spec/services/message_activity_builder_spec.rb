@@ -64,25 +64,23 @@ RSpec.describe MessageActivityBuilder do
         create(:topic_star, user: starring_user2, topic: topic)
       end
 
-      it "creates activities for all users who starred the topic" do
+      it "creates activities for all users who starred the topic except the sender" do
         expect {
           builder.process!
-        }.to change { Activity.count }.by(3) # 2 starring users + sender gets auto-starred
+        }.to change { Activity.count }.by(2) # 2 starring users, sender is excluded
 
         activities = Activity.where(activity_type: "topic_message_received")
-        expect(activities.pluck(:user_id)).to match_array([starring_user1.id, starring_user2.id, sender_user.id])
+        expect(activities.pluck(:user_id)).to match_array([starring_user1.id, starring_user2.id])
       end
 
-      it "marks sender's activity as read if they have topic starred" do
+      it "does not create an activity for the sender even if they starred the topic" do
         # Sender also has the topic starred
         create(:topic_star, user: sender_user, topic: topic)
 
         builder.process!
 
         sender_activity = Activity.find_by(user: sender_user, subject: message)
-        expect(sender_activity).to be_present
-        expect(sender_activity.read_at).to be_present
-        expect(sender_activity.read_at).to be_within(1.second).of(Time.current)
+        expect(sender_activity).to be_nil
       end
 
       it "does not mark other users' activities as read" do
@@ -130,13 +128,12 @@ RSpec.describe MessageActivityBuilder do
       it "handles topic with no stars" do
         expect {
           builder.process!
-        }.to change { Activity.count }.by(1)
+        }.not_to change { Activity.count }
 
         expect(TopicStar.exists?(user: sender_user, topic: topic)).to be true
 
         activity = Activity.find_by(user: sender_user, subject: message)
-        expect(activity).to be_present
-        expect(activity.read_at).to be_present
+        expect(activity).to be_nil
       end
 
       it "handles sender who is not a registered user" do
@@ -166,10 +163,10 @@ RSpec.describe MessageActivityBuilder do
 
         expect {
           builder.process!
-        }.to change { Activity.count }.by(2)
+        }.to change { Activity.count }.by(1)
 
         sender_activity = Activity.find_by(user: sender_user, subject: message)
-        expect(sender_activity.read_at).to be_present
+        expect(sender_activity).to be_nil
 
         other_activity = Activity.find_by(user: other_user, subject: message)
         expect(other_activity.read_at).to be_nil

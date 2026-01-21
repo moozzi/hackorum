@@ -31,14 +31,14 @@ class MessageActivityBuilder
     payload = build_payload
 
     starring_user_ids.each do |user_id|
-      read_at = (user_id == sender_user_id) ? Time.current : nil
+      next if user_id == sender_user_id
 
       Activity.create!(
         user_id: user_id,
         activity_type: "topic_message_received",
         subject: @message,
         payload: payload,
-        read_at: read_at,
+        read_at: nil,
         hidden: false
       )
     end
