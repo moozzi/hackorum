@@ -63,8 +63,7 @@ class TopicsController < ApplicationController
       load_star_state
     end
 
-    # Check if topic has any patches (for sidebar button)
-    @has_patches = @messages.any? { |msg| msg.attachments.any?(&:patch?) }
+    @has_patches = @messages.any? { |msg| msg.attachments.any?(&:patch_extension?) }
   end
 
   def aware
@@ -141,7 +140,7 @@ class TopicsController < ApplicationController
                            .where(id: Attachment.where(message_id: @topic.messages.select(:id))
                                                 .select(:message_id))
                            .order(created_at: :desc)
-                           .find { |msg| msg.attachments.any?(&:patch?) }
+                           .find { |msg| msg.attachments.any?(&:patch_extension?) }
 
     return head :not_found unless latest_message
 

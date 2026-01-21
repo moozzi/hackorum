@@ -292,6 +292,16 @@ RSpec.describe "Topics", type: :request do
       end
     end
 
+    context "with content-based patches only (no .diff or .patch extension)" do
+      let!(:message) { create(:message, topic: topic, sender: creator) }
+      let!(:attachment) { create(:attachment, :content_based_patch, message: message) }
+
+      it "returns 404" do
+        get latest_patchset_topic_path(topic)
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
     context "with nonexistent topic" do
       it "returns 404" do
         get latest_patchset_topic_path(id: 99999)

@@ -8,6 +8,10 @@ class Attachment < ApplicationRecord
   def patch?
     file_name&.ends_with?('.patch') || file_name&.ends_with?('.diff') || patch_content?
   end
+
+  def patch_extension?
+    file_name&.ends_with?('.patch') || file_name&.ends_with?('.diff')
+  end
   
   def decoded_body
     Base64.decode64(body) if body.present?
