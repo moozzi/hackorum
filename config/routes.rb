@@ -77,6 +77,9 @@ Rails.application.routes.draw do
 
   # Help pages
   resources :help, only: [:index, :show], param: :slug
+
+  # Script version endpoint
+  get "scripts/:name/version", to: "scripts#version", as: :script_version
   get "person/*email/contributions/:year", to: "people#contributions", as: :person_contributions, format: false
   get "person/*email/activity/:date", to: "people#daily_activity", as: :person_activity, format: false
   get "person/*email/activity/month/:year/:month", to: "people#monthly_activity", as: :person_monthly_activity, format: false
