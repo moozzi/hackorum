@@ -396,12 +396,21 @@ class HackorumPatch
       return @options[:base_commit]
     end
 
+    patch_files = Dir.glob(File.join(patch_files_dir, "*.patch")).sort
+    return detect_default_branch_head if patch_files.empty?
+
+    # First, check for base-commit line (from git format-patch --base)
+    base_commit = detect_base_commit_from_base_line(patch_files)
+    if base_commit
+      puts "[OK] Base commit: #{base_commit} (from base-commit line)"
+      puts ""
+      return base_commit
+    end
+
+    # Fall back to index hash detection
     puts "Detecting base commit from patch index entries..."
 
-    patch_files = Dir.glob(File.join(patch_files_dir, "*.patch")).sort
     first_patch = patch_files.first
-    return detect_default_branch_head unless first_patch
-
     index_hashes = []
     new_file_count = 0
     content = File.read(first_patch)
@@ -443,6 +452,21 @@ class HackorumPatch
     puts ""
 
     base_commit
+  end
+
+  def detect_base_commit_from_base_line(patch_files)
+    files_to_check = [patch_files.first, patch_files.last].uniq
+
+    files_to_check.each do |patch_file|
+      content = File.read(patch_file)
+      if content =~ /^base-commit:\s*([0-9a-f]{40})\s*$/
+        base_commit = $1
+        puts "Found base-commit line in #{File.basename(patch_file)}: #{base_commit[0..11]}..."
+        return base_commit
+      end
+    end
+
+    nil
   end
 
   def detect_default_branch_head
