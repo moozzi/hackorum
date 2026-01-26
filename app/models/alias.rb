@@ -111,7 +111,8 @@ class Alias < ApplicationRecord
   def queue_person_id_propagation
     return unless person_id.present?
 
-    PersonIdPropagationJob.perform_later(id, person_id)
+    old_person_id = person_id_before_last_save
+    PersonIdPropagationJob.perform_later(id, person_id, old_person_id)
   end
 
   def auto_star_recent_topics

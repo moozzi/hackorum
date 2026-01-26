@@ -1,10 +1,7 @@
 class PersonIdPropagationJob < ApplicationJob
   queue_as :default
 
-  def perform(alias_id, new_person_id)
-    alias_record = Alias.find_by(id: alias_id)
-    old_person_id = alias_record&.person_id_before_last_save || find_old_person_id(alias_id, new_person_id)
-
+  def perform(alias_id, new_person_id, old_person_id)
     # Update topics where this alias is the creator
     Topic.where(creator_id: alias_id)
          .where.not(creator_person_id: new_person_id)
@@ -26,15 +23,6 @@ class PersonIdPropagationJob < ApplicationJob
   end
 
   private
-
-  def find_old_person_id(alias_id, new_person_id)
-    # Try to find the old person by looking at topic_participants that reference
-    # topics where this alias sent messages but the participant has a different person_id
-    topic_ids = Message.where(sender_id: alias_id).select(:topic_id).distinct
-    TopicParticipant.where(topic_id: topic_ids)
-                    .where.not(person_id: new_person_id)
-                    .pick(:person_id)
-  end
 
   def merge_topic_participants(old_person_id, new_person_id)
     is_new_contributor = ContributorMembership.exists?(person_id: new_person_id)
