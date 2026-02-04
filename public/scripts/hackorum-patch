@@ -13,7 +13,7 @@ require 'shellwords'
 require 'json'
 
 class HackorumPatch
-  VERSION = '1.1.0'
+  VERSION = '1.2.0'
 
   def initialize(argv)
     @options = {}
@@ -96,6 +96,10 @@ class HackorumPatch
 
   private
 
+  def verbose_log(msg)
+    puts msg if @options[:verbose]
+  end
+
   def parse_options!(argv)
     @option_parser = OptionParser.new do |opts|
       opts.banner = "Usage: hackorum-patch <topic_id|archive.tar.gz> [<branch_name>] [OPTIONS]"
@@ -127,6 +131,10 @@ class HackorumPatch
 
       opts.on("--server=URL", "Server URL (default: https://hackorum.dev)") do |url|
         @options[:server] = url
+      end
+
+      opts.on("--verbose", "Print detailed base commit detection info") do
+        @options[:verbose] = true
       end
 
       opts.on("-h", "--help", "Show this help") do
@@ -434,10 +442,18 @@ class HackorumPatch
     file_info = {}  # path => before_hash
     all_patch_files.each do |patch_file|
       content = File.read(patch_file)
+      verbose_log "  Scanning #{File.basename(patch_file)} for file hashes..."
       # Format: diff --git a/path b/path followed by index abc123..def456
       content.scan(/^diff --git a\/(.+?) b\/\1\n(?:.*?\n)*?index ([0-9a-f]+)\.\.([0-9a-f]+)/m) do |path, before_hash, after_hash|
-        next if before_hash =~ /^0+$/  # Skip new files
-        next if file_info.key?(path)   # Only use first occurrence
+        if before_hash =~ /^0+$/
+          verbose_log "    #{path}: new file (skipped)"
+          next
+        end
+        if file_info.key?(path)
+          verbose_log "    #{path}: already recorded (skipped duplicate)"
+          next
+        end
+        verbose_log "    #{path}: before=#{before_hash}"
         file_info[path] = before_hash
       end
     end
@@ -448,15 +464,30 @@ class HackorumPatch
     end
 
     puts "  Found #{file_info.size} modified files across #{all_patch_files.size} patches"
+    if @options[:verbose]
+      verbose_log "  Files and their expected 'before' hashes:"
+      file_info.each do |path, hash|
+        verbose_log "    #{path}: #{hash}"
+      end
+    end
 
     default_branch = detect_default_branch_head
 
     # Check if the "before" hashes match what's at the default branch HEAD
     # This confirms HEAD is the correct base
     default_head = `git rev-parse #{default_branch} 2>/dev/null`.strip
+    verbose_log "  Checking against #{default_branch} HEAD (#{default_head[0..11]}...):"
     all_match = file_info.all? do |path, before_hash|
       current_hash = `git rev-parse #{default_head}:#{path} 2>/dev/null`.strip
-      current_hash == before_hash || current_hash.start_with?(before_hash) || before_hash.start_with?(current_hash)
+      matches = current_hash == before_hash || current_hash.start_with?(before_hash) || before_hash.start_with?(current_hash)
+      if @options[:verbose]
+        status = matches ? "MATCH" : "MISMATCH"
+        verbose_log "    #{path}:"
+        verbose_log "      patch:  #{before_hash}"
+        verbose_log "      HEAD:   #{current_hash.empty? ? '(not found)' : current_hash}"
+        verbose_log "      result: #{status}"
+      end
+      matches
     end
 
     if all_match
@@ -471,14 +502,22 @@ class HackorumPatch
 
     # Find commits on the default branch that touched these files
     paths = file_info.keys.map { |p| Shellwords.escape(p) }.join(" ")
+    verbose_log "  Searching commits that touched: #{file_info.keys.join(', ')}"
     commits = `git log #{default_branch} --pretty=format:%H -n 50 -- #{paths} 2>/dev/null`.strip.split("\n")
+    verbose_log "  Found #{commits.size} candidate commits to check"
 
-    commits.each do |commit|
+    commits.each_with_index do |commit, idx|
       next if commit.empty?
 
+      verbose_log "  Checking commit #{idx + 1}/#{commits.size}: #{commit[0..11]}..."
+      mismatch_details = []
       matches = file_info.all? do |path, before_hash|
         blob_hash = `git rev-parse #{commit}:#{path} 2>/dev/null`.strip
-        blob_hash == before_hash || blob_hash.start_with?(before_hash) || before_hash.start_with?(blob_hash)
+        result = blob_hash == before_hash || blob_hash.start_with?(before_hash) || before_hash.start_with?(blob_hash)
+        unless result
+          mismatch_details << "    #{path}: patch=#{before_hash}, commit=#{blob_hash.empty? ? '(not found)' : blob_hash}"
+        end
+        result
       end
 
       if matches
@@ -486,10 +525,14 @@ class HackorumPatch
         puts "[OK] Base commit: #{commit}"
         puts ""
         return commit
+      else
+        verbose_log "    No match. Mismatches:"
+        mismatch_details.each { |d| verbose_log d }
       end
     end
 
     puts "  Could not find matching commit in history"
+    verbose_log "  Falling back to default branch HEAD"
     detect_default_branch_head
   end
 
