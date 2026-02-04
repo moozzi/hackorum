@@ -157,6 +157,9 @@ class TopicsController < ApplicationController
     require 'zlib'
     require 'rubygems/package'
 
+    first_message = @topic.messages.order(:created_at).first
+    first_message_id = first_message&.message_id
+
     tar_gz_data = StringIO.new
     Zlib::GzipWriter.wrap(tar_gz_data) do |gz|
       Gem::Package::TarWriter.new(gz) do |tar|
@@ -164,8 +167,10 @@ class TopicsController < ApplicationController
         metadata = {
           attachment_number: attachment_number,
           topic_id: @topic.id,
-          submission_date: latest_message.created_at.iso8601
-        }.to_json
+          submission_date: latest_message.created_at.iso8601,
+          hackorum_url: topic_url(@topic),
+          upstream_url: first_message_id ? "https://www.postgresql.org/message-id/flat/#{ERB::Util.url_encode(first_message_id)}" : nil
+        }.compact.to_json
         tar.add_file_simple('hackorum.json', 0644, metadata.bytesize) do |io|
           io.write(metadata)
         end
