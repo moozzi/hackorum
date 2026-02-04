@@ -23,6 +23,7 @@ class HackorumPatch
     @local_archive = nil
     @using_local_file = false
     @using_diff_mode = false
+    @metadata = nil
 
     parse_options!(argv)
 
@@ -355,6 +356,11 @@ class HackorumPatch
       Gem::Package::TarReader.new(gz) do |tar|
         tar.each do |entry|
           next unless entry.file?
+          if entry.full_name == 'hackorum.json'
+            @metadata = JSON.parse(entry.read)
+            verbose_log "  Parsed metadata: submission_date=#{@metadata['submission_date']}"
+            next
+          end
           dest = File.join(@temp_dir, entry.full_name)
           File.write(dest, entry.read)
           puts "  Extracted: #{entry.full_name}"
@@ -376,6 +382,11 @@ class HackorumPatch
         Gem::Package::TarReader.new(gz) do |tar|
           tar.each do |entry|
             next unless entry.file?
+            if entry.full_name == 'hackorum.json'
+              @metadata = JSON.parse(entry.read)
+              verbose_log "  Parsed metadata: submission_date=#{@metadata['submission_date']}"
+              next
+            end
             dest = File.join(@temp_dir, entry.full_name)
             File.write(dest, entry.read)
             puts "  Extracted: #{entry.full_name}"
@@ -503,7 +514,16 @@ class HackorumPatch
     # Find commits on the default branch that touched these files
     paths = file_info.keys.map { |p| Shellwords.escape(p) }.join(" ")
     verbose_log "  Searching commits that touched: #{file_info.keys.join(', ')}"
-    commits = `git log #{default_branch} --pretty=format:%H -n 50 -- #{paths} 2>/dev/null`.strip.split("\n")
+
+    # Use submission date from metadata to constrain search
+    until_flag = ""
+    if @metadata && @metadata['submission_date']
+      submission_date = @metadata['submission_date']
+      verbose_log "  Using submission date constraint: --until=#{submission_date}"
+      until_flag = "--until=#{Shellwords.escape(submission_date)}"
+    end
+
+    commits = `git log #{default_branch} --pretty=format:%H #{until_flag} -n 200 -- #{paths} 2>/dev/null`.strip.split("\n")
     verbose_log "  Found #{commits.size} candidate commits to check"
 
     commits.each_with_index do |commit, idx|

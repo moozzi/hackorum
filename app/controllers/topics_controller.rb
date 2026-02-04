@@ -147,12 +147,29 @@ class TopicsController < ApplicationController
     patches = latest_message.attachments.select(&:patch?).sort_by(&:file_name)
     return head :not_found if patches.empty?
 
+    # Calculate attachment number (1-based index among all messages with attachments)
+    messages_with_attachments = @topic.messages
+                                      .where(id: Attachment.where(message_id: @topic.messages.select(:id))
+                                                           .select(:message_id))
+                                      .order(created_at: :asc)
+    attachment_number = messages_with_attachments.index { |msg| msg.id == latest_message.id }.to_i + 1
+
     require 'zlib'
     require 'rubygems/package'
 
     tar_gz_data = StringIO.new
     Zlib::GzipWriter.wrap(tar_gz_data) do |gz|
       Gem::Package::TarWriter.new(gz) do |tar|
+        # Add metadata file first
+        metadata = {
+          attachment_number: attachment_number,
+          topic_id: @topic.id,
+          submission_date: latest_message.created_at.iso8601
+        }.to_json
+        tar.add_file_simple('hackorum.json', 0644, metadata.bytesize) do |io|
+          io.write(metadata)
+        end
+
         patches.each do |patch|
           content = patch.decoded_body_utf8
           tar.add_file_simple(patch.file_name, 0644, content.bytesize) do |io|
