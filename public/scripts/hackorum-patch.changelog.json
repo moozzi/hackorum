@@ -5,6 +5,7 @@
       "version": "1.2.0",
       "date": "2026-02-04",
       "changes": [
+        "Fixed patch file sorting for files with prefixes (e.g., nocfbot.v2-0005-subject.patch now sorts by sequence number)",
         "Improved base commit detection using submission date from archive metadata",
         "Added --verbose option for detailed base commit detection debugging",
         "Copy extracted patch files and metadata to .hackorum/ directory for inspection"

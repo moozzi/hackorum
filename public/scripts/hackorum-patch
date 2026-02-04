@@ -102,6 +102,20 @@ class HackorumPatch
     puts msg if @options[:verbose]
   end
 
+  def sort_patch_files(files)
+    files.sort_by do |f|
+      basename = File.basename(f)
+      # Match sequence number: digits followed by hyphen before the actual patch name
+      # e.g., "0001-subject.patch" or "nocfbot.v2-0005-subject.patch"
+      if basename =~ /(\d+)-[^-]+\.(patch|diff)$/i
+        $1.to_i
+      else
+        # Fallback: sort alphabetically but after numbered patches
+        [Float::INFINITY, basename]
+      end
+    end
+  end
+
   def parse_options!(argv)
     @option_parser = OptionParser.new do |opts|
       opts.banner = "Usage: hackorum-patch <topic_id|archive.tar.gz> [<branch_name>] [OPTIONS]"
@@ -369,7 +383,7 @@ class HackorumPatch
       end
     end
 
-    all_files = Dir.glob(File.join(@temp_dir, "*")).sort
+    all_files = sort_patch_files(Dir.glob(File.join(@temp_dir, "*")))
     categorize_and_report_files(all_files)
   end
 
@@ -396,7 +410,7 @@ class HackorumPatch
       end
     end
 
-    all_files = Dir.glob(File.join(@temp_dir, "*")).sort
+    all_files = sort_patch_files(Dir.glob(File.join(@temp_dir, "*")))
     categorize_and_report_files(all_files)
   end
 
@@ -432,8 +446,8 @@ class HackorumPatch
       return @options[:base_commit]
     end
 
-    patch_files = Dir.glob(File.join(patch_files_dir, "*.patch")).sort
-    diff_files = Dir.glob(File.join(patch_files_dir, "*.diff")).sort
+    patch_files = sort_patch_files(Dir.glob(File.join(patch_files_dir, "*.patch")))
+    diff_files = sort_patch_files(Dir.glob(File.join(patch_files_dir, "*.diff")))
     all_patch_files = patch_files + diff_files
     return detect_default_branch_head if all_patch_files.empty?
 
