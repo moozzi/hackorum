@@ -9,7 +9,6 @@ module Settings
 
     def index
       @your_teams = user_signed_in? ? current_user.teams.includes(team_members: :user) : []
-      @all_teams = Team.includes(team_members: :user).order(:name)
     end
 
     def show

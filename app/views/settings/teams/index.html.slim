@@ -20,14 +20,3 @@
           = f.label :name
           = f.text_field :name, required: true, placeholder: "Team name"
         = f.submit "Create team", class: "button-primary"
-
-  .teams-section
-    h2 All teams
-    - if @all_teams.any?
-      ul.team-list
-        - @all_teams.each do |team|
-          li
-            = link_to team.name, settings_team_path(team)
-            span.team-meta = " - #{team.team_members.count} member(s)"
-    - else
-      p No teams yet.
