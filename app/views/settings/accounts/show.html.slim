@@ -40,6 +40,7 @@
       table.email-table
         thead
           tr
+            th Name
             th Email
             th Verified
             th Primary
@@ -47,6 +48,7 @@
         tbody
           - @aliases.each do |al|
             tr class=(al.mention_only? ? 'mention-only-alias' : '')
+              td = al.name
               td
                 = al.email
                 - if al.mention_only?
