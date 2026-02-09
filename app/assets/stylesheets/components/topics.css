@@ -239,6 +239,10 @@ a.topic-icon {
     gap: var(--spacing-2);
   }
 
+  .topic-title-icons {
+    min-width: 0;
+  }
+
   .topic-icon {
     padding: 2px;
     margin-right: 0;
@@ -303,6 +307,14 @@ a.topic-icon {
   }
 }
 
+.topic-row.topic-reading.has-new-replies {
+  background: var(--color-bg-unread);
+
+  &:hover {
+    background: var(--color-bg-unread-hover);
+  }
+}
+
 .topic-row.topic-read {
   color: var(--color-text-muted);
   background: var(--color-bg-read);
@@ -320,6 +332,8 @@ a.topic-icon {
   padding: var(--spacing-2) var(--spacing-4) var(--spacing-2) var(--spacing-2);
   align-self: stretch;
   height: 100%;
+  min-width: var(--topic-title-icons-width, 190px);
+  flex-shrink: 0;
 }
 
 .status-border.has-new-replies::before {
@@ -329,7 +343,7 @@ a.topic-icon {
   top: 0;
   bottom: 0;
   width: var(--topic-new-replies-strip-width, 260px);
-  background: var(--color-bg-unread);
+  background: var(--color-bg-read);
   clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
   z-index: 0;
 }
@@ -429,8 +443,7 @@ a.topic-icon {
 
 .topic-title-main {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: stretch;
   gap: var(--spacing-2);
   height: 100%;
@@ -511,6 +524,7 @@ a.topic-icon {
 
   .topic-title-mobile {
     display: flex;
+    z-index: auto;
   }
 
   .topic-row-footer {
@@ -531,6 +545,9 @@ a.topic-icon {
     font-size: var(--font-size-2xs);
   }
 
+  .topic-icon-hover {
+    z-index: 200;
+  }
 }
 
 .topic-link {
@@ -539,6 +556,9 @@ a.topic-icon {
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-lg);
   line-height: var(--line-height-relaxed);
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 
   &:hover {
     color: var(--color-text-link-hover);
