@@ -1,0 +1,2 @@
+class PageLoadStat < ApplicationRecord
+end
