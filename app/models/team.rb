@@ -12,8 +12,9 @@ class Team < ApplicationRecord
 
   validates :name, presence: true
   validates :name, format: { with: /\A[a-zA-Z0-9_\-\.]+\z/ }
+  validate :name_available_in_reservations
 
-  after_commit :reserve_name, on: :create
+  after_create :reserve_name
   after_destroy :release_name_reservation
 
   def member?(user)
@@ -42,6 +43,17 @@ class Team < ApplicationRecord
   end
 
   private
+
+  def name_available_in_reservations
+    return if name.blank? || !will_save_change_to_name?
+
+    normalized = NameReservation.normalize(name)
+    existing = NameReservation.find_by(name: normalized)
+    return unless existing
+    return if existing.owner_type == "Team" && existing.owner_id == id
+
+    errors.add(:name, "is already taken")
+  end
 
   def reserve_name
     NameReservation.reserve!(name:, owner: self)

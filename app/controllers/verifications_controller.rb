@@ -30,6 +30,7 @@ class VerificationsController < ApplicationController
     metadata = JSON.parse(token.metadata || "{}") rescue {}
     desired_username = metadata["username"]
     user.username = desired_username
+    user.skip_name_reservation = true
     if metadata["password_digest"].present?
       user.password_digest = metadata["password_digest"]
     end

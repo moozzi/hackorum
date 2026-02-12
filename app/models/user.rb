@@ -33,23 +33,37 @@ class User < ApplicationRecord
     team_ids.intersect?(other_user.team_ids)
   end
 
+  attr_accessor :skip_name_reservation
+
   validates :username, format: { with: /\A[a-zA-Z0-9_\-\.]+\z/, allow_blank: true }
+  validates :username, uniqueness: { allow_blank: true, case_sensitive: false }
   validates :username, presence: true, on: :registration
+  validate :username_available_in_reservations
 
   before_save :release_old_username_reservation
-  after_commit :reserve_username, on: [ :create, :update ]
+  after_save :reserve_username
   after_destroy :release_name_reservation
 
   private
 
+  def username_available_in_reservations
+    return if username.blank? || !will_save_change_to_username? || skip_name_reservation
+
+    normalized = NameReservation.normalize(username)
+    existing = NameReservation.find_by(name: normalized)
+    return unless existing
+    return if existing.owner_type == "User" && existing.owner_id == id
+
+    errors.add(:username, "is already taken")
+  end
+
   def release_old_username_reservation
     return unless will_save_change_to_username?
-    old_username = username_before_last_save
-    NameReservation.release_for(self) if old_username.present?
+    NameReservation.release_for(self) if username_was.present?
   end
 
   def reserve_username
-    return if username.blank?
+    return if username.blank? || skip_name_reservation
     NameReservation.reserve!(name: username, owner: self)
   end
 

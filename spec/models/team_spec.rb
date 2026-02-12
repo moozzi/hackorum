@@ -53,6 +53,48 @@ RSpec.describe Team, type: :model do
     end
   end
 
+  describe "name reservation" do
+    it "rejects name already reserved by a user" do
+      create(:user, username: "claimed")
+
+      new_team = Team.new(name: "claimed")
+      expect(new_team).not_to be_valid
+      expect(new_team.errors[:name]).to include("is already taken")
+    end
+
+    it "rejects name already reserved by another team" do
+      Team.create!(name: "existing")
+
+      new_team = Team.new(name: "existing")
+      expect(new_team).not_to be_valid
+      expect(new_team.errors[:name]).to include("is already taken")
+    end
+
+    it "rejects name case-insensitively" do
+      create(:user, username: "CaseName")
+
+      new_team = Team.new(name: "casename")
+      expect(new_team).not_to be_valid
+      expect(new_team.errors[:name]).to include("is already taken")
+    end
+
+    it "creates a reservation on create" do
+      new_team = Team.create!(name: "freshteam")
+      reservation = NameReservation.find_by(name: "freshteam")
+      expect(reservation).to be_present
+      expect(reservation.owner_type).to eq("Team")
+      expect(reservation.owner_id).to eq(new_team.id)
+    end
+
+    it "releases reservation on destroy" do
+      new_team = Team.create!(name: "doomed")
+      expect(NameReservation.find_by(name: "doomed")).to be_present
+
+      new_team.destroy!
+      expect(NameReservation.find_by(name: "doomed")).to be_nil
+    end
+  end
+
   describe "#mentionable_by?" do
     it "allows only members to mention private teams" do
       expect(team.mentionable_by?(user)).to be(true)
