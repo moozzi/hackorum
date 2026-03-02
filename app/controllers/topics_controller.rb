@@ -1,11 +1,10 @@
 class TopicsController < ApplicationController
   before_action :set_topic, only: [ :show, :aware, :read_all, :star, :unstar, :latest_patchset ]
   before_action :require_authentication, only: [ :aware, :aware_bulk, :aware_all, :read_all, :star, :unstar ]
-  before_action :require_team_membership, only: [ :index, :new_topics_count ]
 
   def index
     @search_query = nil
-    base_query = apply_filters(Topic.includes(:creator, creator_person: :default_alias, last_sender_person: :default_alias))
+    base_query = Topic.includes(:creator, creator_person: :default_alias, last_sender_person: :default_alias)
 
     apply_cursor_pagination(base_query)
     preload_topic_participants
@@ -696,161 +695,8 @@ class TopicsController < ApplicationController
     result
   end
 
-  def apply_filters(base_query)
-    filter = params[:filter].to_s
-    team_id = params[:team_id].presence&.to_i
-    current_user_id = current_user&.id
-    tag_filter = params[:note_tag].to_s.strip.downcase
-
-    if tag_filter.present? && user_signed_in?
-      visible_notes = Note.active.visible_to(current_user)
-      tagged_notes = visible_notes.joins(:note_tags).where(note_tags: { tag: tag_filter })
-      note_topics = tagged_notes.select(:topic_id).distinct
-
-      base_query = base_query.joins("INNER JOIN (#{note_topics.to_sql}) tagged_notes ON tagged_notes.topic_id = topics.id")
-      @active_note_tag = tag_filter
-    end
-
-    case filter
-    when "no_contrib_replies"
-      base_query = base_query.joins(:messages)
-                             .left_joins(messages: { sender: { person: :contributor_memberships } })
-                             .group("topics.id")
-                             .having("COUNT(DISTINCT contributor_memberships.person_id) = 0")
-    when "patch_no_replies"
-      base_query = base_query.joins(messages: :attachments)
-                             .group("topics.id")
-                             .having("COUNT(messages.id) = 1")
-                             .where("attachments.file_name ILIKE ? OR attachments.file_name ILIKE ?", "%.patch", "%.diff")
-    when "reading_incomplete"
-      if current_user_id
-        base_query = base_query.joins(:messages)
-                               .joins("LEFT JOIN message_read_ranges mrr ON mrr.topic_id = topics.id AND mrr.user_id = #{current_user_id}")
-                               .group("topics.id")
-                               .having("COALESCE(MAX(mrr.range_end_message_id), 0) > 0")
-                               .having("COALESCE(MAX(mrr.range_end_message_id), 0) < MAX(messages.id)")
-      end
-    when "new_for_me"
-      if current_user_id
-        aware_before = current_user&.aware_before || Time.at(0)
-        base_query = base_query.joins(:messages)
-                               .joins("LEFT JOIN message_read_ranges mrr ON mrr.topic_id = topics.id AND mrr.user_id = #{current_user_id}")
-                               .group("topics.id")
-                               .having("MAX(messages.created_at) > ?", aware_before)
-                               .having("COALESCE(MAX(mrr.range_end_message_id), 0) < MAX(messages.id)")
-      end
-    when "team_unread"
-      if team_id && current_user_id
-        member_ids = TeamMember.where(team_id: team_id).select(:user_id)
-        base_query = base_query.joins(:messages)
-                               .where.not(id: MessageReadRange.where(user_id: member_ids).select(:topic_id))
-                               .group("topics.id")
-      end
-    when "team_reading_others"
-      if team_id && current_user_id
-        teammate_ids = TeamMember.where(team_id: team_id).where.not(user_id: current_user_id).select(:user_id)
-        base_query = base_query.joins(:messages)
-                               .joins("LEFT JOIN message_read_ranges mrr_self ON mrr_self.topic_id = topics.id AND mrr_self.user_id = #{current_user_id}")
-                               .joins("INNER JOIN message_read_ranges mrr_team ON mrr_team.topic_id = topics.id AND mrr_team.user_id IN (#{teammate_ids.to_sql})")
-                               .group("topics.id")
-                               .having("COALESCE(MAX(mrr_self.range_end_message_id), 0) < MAX(messages.id)")
-      end
-    when "team_reading_any"
-      if team_id && current_user_id
-        member_ids = TeamMember.where(team_id: team_id).select(:user_id)
-        base_query = base_query.joins(:messages)
-                               .joins("INNER JOIN message_read_ranges mrr_team ON mrr_team.topic_id = topics.id AND mrr_team.user_id IN (#{member_ids.to_sql})")
-                               .group("topics.id")
-      end
-    when "started_by_me"
-      if current_user_id
-        base_query = base_query.where(creator_person_id: current_user.person_id)
-      end
-    when "messaged_by_me"
-      if current_user_id
-        base_query = base_query.joins(:messages).where(messages: { sender_person_id: current_user.person_id }).distinct
-      end
-    when "team_started"
-      if team_id
-        member_person_ids = User.joins(:team_members).where(team_members: { team_id: team_id }).select(:person_id)
-        base_query = base_query.where(creator_person_id: member_person_ids)
-      end
-    when "team_messaged"
-      if team_id
-        member_person_ids = User.joins(:team_members).where(team_members: { team_id: team_id }).select(:person_id)
-        base_query = base_query.where(id: Message.where(sender_person_id: member_person_ids).select(:topic_id))
-      end
-    when "starred_by_me"
-      if current_user_id
-        base_query = base_query.joins(:topic_stars)
-                               .where(topic_stars: { user_id: current_user_id })
-      end
-    when "starred_by_team"
-      if team_id && current_user_id
-        member_ids = TeamMember.where(team_id: team_id).select(:user_id)
-        base_query = base_query.joins(:topic_stars)
-                               .where(topic_stars: { user_id: member_ids })
-                               .distinct
-      end
-    end
-    base_query
-  end
-
-  def apply_state_filters
-    filter = params[:filter].to_s
-    return if filter.blank?
-    return unless @topic_states
-    team_id = params[:team_id].presence&.to_i
-
-    case filter
-    when "reading_incomplete"
-      @topics = @topics.select { |t| @topic_states.dig(t.id, :status) == :reading }
-    when "new_for_me"
-      aware_before = current_user.aware_before
-      @topics = @topics.select do |t|
-        state = @topic_states[t.id] || {}
-        last_time = state[:last_time]
-        last_id = state[:last_id]
-        aware_until = state[:aware_until]
-        status = state[:status]
-
-        newer_than_global = aware_before.nil? || (last_time && last_time > aware_before)
-        missing_latest = last_id && (!aware_until || aware_until < last_id)
-        not_read = status != :read
-
-        newer_than_global && missing_latest && not_read
-      end
-    when "team_unread"
-      @topics = @topics.select do |t|
-        team_readers = filter_team_readers(t, team_id: team_id)
-        team_readers.empty?
-      end
-    when "team_reading_others"
-      @topics = @topics.select do |t|
-        state = @topic_states[t.id] || {}
-        my_status = state[:status]
-        team_readers = filter_team_readers(t, team_id: team_id)
-        team_readers.any? && my_status != :read && my_status != :reading
-      end
-    when "team_reading_any"
-      @topics = @topics.select do |t|
-        team_readers = filter_team_readers(t, team_id: team_id)
-        team_readers.any?
-      end
-    end
-
-    topic_ids = @topics.map(&:id)
-    @topic_states.slice!(*topic_ids) if topic_ids.any?
-  end
-
-  def filter_team_readers(topic, team_id:)
-    readers = @topic_states.dig(topic.id, :team_readers) || []
-    return readers unless team_id
-    readers.select { |r| r[:team_id] == team_id }
-  end
-
   def topics_base_query(search_query: nil)
-    return apply_filters(Topic.includes(:creator, creator_person: :default_alias, last_sender_person: :default_alias)) if search_query.nil?
+    return Topic.includes(:creator, creator_person: :default_alias, last_sender_person: :default_alias) if search_query.nil?
 
     cleaned_query = search_query.to_s.strip
     return Topic.none if cleaned_query.blank?
@@ -1030,8 +876,6 @@ class TopicsController < ApplicationController
 
   def topics_page_cache_key
     return nil unless @topics&.first
-    return nil if params[:filter].present? || params[:team_id].present?
-    return nil if params[:note_tag].present?
 
     latest_topic = @topics.first
     watermark = "#{latest_topic.last_activity.to_i}_#{latest_topic.id}"
@@ -1041,8 +885,6 @@ class TopicsController < ApplicationController
   def topics_turbo_stream_cache_key
     [
       "topics-index-turbo",
-      params[:filter],
-      params[:team_id],
       params[:cursor].presence || "root",
       topic_link_pref_cache_key
     ]
@@ -1053,8 +895,6 @@ class TopicsController < ApplicationController
   end
 
   def topics_turbo_stream_cache_fetch
-    return yield if params[:filter].present? || params[:team_id].present? || params[:note_tag].present?
-
     Rails.cache.fetch(topics_turbo_stream_cache_key, expires_in: 10.minutes) { yield }
   end
 
@@ -1064,17 +904,4 @@ class TopicsController < ApplicationController
     current_user.open_threads_at_first_unread? ? "first-unread" : "top"
   end
 
-  def require_team_membership
-    team_id = params[:team_id].presence&.to_i
-    return unless team_id
-
-    unless user_signed_in?
-      redirect_to new_session_path, alert: "Please sign in"
-      return
-    end
-
-    team = Team.find_by(id: team_id)
-    render_404 and return unless team
-    render_404 unless team.member?(current_user)
-  end
 end

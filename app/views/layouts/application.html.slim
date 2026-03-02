@@ -41,7 +41,7 @@ html data-theme="light"
     - if user_signed_in? && current_user.username.blank?
       .global-warning
         span Please set a username in Settings.
-    - starred_active = controller_name == "topics" && action_name == "index" && params[:filter].to_s == "starred_by_me"
+    - starred_active = controller_name == "topics" && action_name == "search" && params[:q].to_s == "starred:me"
     nav.main-navigation
       .nav-container
         .nav-brand
@@ -61,7 +61,7 @@ html data-theme="light"
                 - icon_class = starred_active ? "fa-solid fa-star" : "fa-regular fa-star"
                 - link_classes = ["nav-link"]
                 - link_classes << "is-active" if starred_active
-                = link_to topics_path(filter: "starred_by_me"), class: link_classes.join(" "), title: "Starred by me", aria: { label: "Starred by me" } do
+                = link_to search_topics_path(q: "starred:me"), class: link_classes.join(" "), title: "Starred by me", aria: { label: "Starred by me" } do
                   i class=icon_class aria-hidden="true"
                   span.sr-only Starred
               = link_to "Search", topics_path(anchor: "search"), class: "nav-link"
@@ -81,7 +81,7 @@ html data-theme="light"
           span.tagline PostgreSQL Hackers Archive
         - if user_signed_in?
           - unread = activity_unread_count
-          - starred_href = starred_active ? topics_path : topics_path(filter: "starred_by_me")
+          - starred_href = starred_active ? topics_path : search_topics_path(q: "starred:me")
           - starred_title = starred_active ? "All topics" : "Starred by me"
           = link_to starred_href, class: "nav-link nav-mobile-star#{' is-active' if starred_active}", title: starred_title, aria: { label: starred_title } do
             i class=(starred_active ? "fa-solid fa-star" : "fa-regular fa-star") aria-hidden="true"

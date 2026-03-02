@@ -1,16 +1,5 @@
 - cache_block = lambda do
-  - if params[:filter].present?
-    = link_to topics_path(note_tag: params[:note_tag]), class: "topics-filter-chip" do
-      i.fa-solid.fa-filter aria-hidden="true"
-      span = topic_filter_labels[params[:filter]] || params[:filter].humanize
-      i.fa-solid.fa-xmark.topics-filter-chip-close aria-hidden="true"
-  - elsif params[:note_tag].present?
-    = link_to topics_path, class: "topics-filter-chip" do
-      i.fa-solid.fa-tag aria-hidden="true"
-      span = "##{params[:note_tag]}"
-      i.fa-solid.fa-xmark.topics-filter-chip-close aria-hidden="true"
-
-  #new-topics-banner data-controller="new-topics-banner" data-new-topics-banner-url-value=new_topics_count_topics_path(viewing_since: @viewing_since.iso8601, filter: params[:filter], team_id: params[:team_id]) data-new-topics-banner-interval-ms-value="180000"
+  #new-topics-banner data-controller="new-topics-banner" data-new-topics-banner-url-value=new_topics_count_topics_path(viewing_since: @viewing_since.iso8601) data-new-topics-banner-interval-ms-value="180000"
     = render partial: "new_topics_banner", locals: { count: @new_topics_count, viewing_since: @viewing_since }
 
   .topics-table
@@ -26,7 +15,7 @@
     - if @topics.size == 25
       - last_topic = @topics.last
       - cursor = "#{last_topic.last_activity.iso8601}_#{last_topic.id}"
-      = turbo_frame_tag "pagination", src: topics_path(cursor: cursor, viewing_since: @viewing_since.iso8601, filter: params[:filter], team_id: params[:team_id], note_tag: params[:note_tag], format: :turbo_stream), loading: :lazy do
+      = turbo_frame_tag "pagination", src: topics_path(cursor: cursor, viewing_since: @viewing_since.iso8601, format: :turbo_stream), loading: :lazy do
         .loading-indicator Loading more topics...
     - else
       = turbo_frame_tag "pagination"

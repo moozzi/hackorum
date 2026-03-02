@@ -5,9 +5,7 @@
     td colspan=3
       .topics-empty-state
         i.fa-regular.fa-folder-open aria-hidden="true"
-        p No topics match this filter.
-        - if params[:filter].present? || params[:note_tag].present?
-          = link_to "Clear filters", topics_path, class: "topics-empty-clear"
+        p No topics found.
 
 - topics.each do |topic|
   - tp_data = topic_participants_map[topic.id] || {}
