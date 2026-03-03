@@ -33,7 +33,7 @@ export default class extends Controller {
           this.clearTimer()
         }
       })
-    }, { threshold: [0.1, 0.25, 0.5, 0.7, 0.9] })
+    }, { threshold: [0, 0.25, 0.7] })
 
     this.observer.observe(this.element)
   }
