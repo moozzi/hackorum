@@ -27,7 +27,8 @@
       .sidebar-section
         h3.sidebar-heading Saved searches
         .sidebar-content
-          - active_search = params[:q]
+          - active_ss_id = params[:saved_search_id]&.to_i
+          - active_team_id = params[:team_id]&.to_i
 
           - global_searches = @saved_searches.select(&:scope_global?)
           - if global_searches.any?
@@ -35,7 +36,7 @@
               span.filter-subsection-label Global
               ul.quick-filters
                 - global_searches.each do |ss|
-                  li = link_to ss.name, search_topics_path(q: ss.query), class: ("quick-filter-link is-active" if active_search == ss.query)
+                  li = link_to ss.name, search_topics_path(saved_search_id: ss.id), class: ("quick-filter-link is-active" if active_ss_id == ss.id)
 
           - if user_signed_in?
             - user_searches = @saved_searches.select { |ss| ss.scope_user? && ss.user_id.present? }
@@ -46,7 +47,7 @@
                 span.filter-subsection-label My searches
                 ul.quick-filters
                   - all_user.each do |ss|
-                    li = link_to ss.name, search_topics_path(q: ss.query), class: ("quick-filter-link is-active" if active_search == ss.query)
+                    li = link_to ss.name, search_topics_path(saved_search_id: ss.id), class: ("quick-filter-link is-active" if active_ss_id == ss.id)
 
             - team_templates = @saved_searches.select { |ss| ss.scope_team? && ss.team_id.nil? }
             - team_specific = @saved_searches.select { |ss| ss.scope_team? && ss.team_id.present? }
@@ -58,7 +59,7 @@
                   span.filter-subsection-label = "#{team.name} searches"
                   ul.quick-filters
                     - all_team.each do |ss|
-                      li = link_to ss.name, search_topics_path(q: ss.resolve_query(team: team)), class: ("quick-filter-link is-active" if active_search == ss.resolve_query(team: team))
+                      li = link_to ss.name, search_topics_path(saved_search_id: ss.id, team_id: team.id), class: ("quick-filter-link is-active" if active_ss_id == ss.id && (!ss.scope_team? || active_team_id == team.id))
 
     - if user_signed_in? && @available_note_tags.present?
       .sidebar-section

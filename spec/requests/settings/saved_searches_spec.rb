@@ -85,6 +85,21 @@ RSpec.describe "Settings::SavedSearches", type: :request do
       search = SavedSearch.last
       expect(search.scope).to eq("user")
     end
+
+    context "with JSON format" do
+      it "returns JSON with redirect_url on success" do
+        user = create(:user)
+        sign_in(user)
+
+        post settings_saved_searches_path,
+          params: { saved_search: { name: "My New Search", query: "from:me" } },
+          headers: { "Accept" => "application/json" }
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        saved = SavedSearch.last
+        expect(json["redirect_url"]).to include("saved_search_id=#{saved.id}")
+      end
+    end
   end
 
   describe "PATCH /settings/saved_searches/:id" do

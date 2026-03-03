@@ -190,6 +190,95 @@ RSpec.describe "Topics", type: :request do
         expect(response.body).to include("No results found")
       end
     end
+
+    context "with search query and no saved search (signed in)" do
+      let!(:search_user) { create(:user, password: "secret", password_confirmation: "secret") }
+
+      before do
+        attach_verified_alias(search_user, email: "searcher@example.com")
+      end
+
+      it "shows save this search option" do
+        sign_in(email: "searcher@example.com")
+        get search_topics_path, params: { q: "PostgreSQL" }
+        expect(response.body).to include("Save this search")
+      end
+    end
+
+    context "with saved_search_id" do
+      let!(:saved_search) { create(:saved_search, name: "My Search", query: "PostgreSQL", scope: "global") }
+
+      it "loads search results from saved search" do
+        get search_topics_path, params: { saved_search_id: saved_search.id }
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(topic1.title)
+      end
+
+      it "shows the saved search name" do
+        get search_topics_path, params: { saved_search_id: saved_search.id }
+        expect(response.body).to include("My Search")
+      end
+
+      it "ignores q param when saved_search_id is present" do
+        get search_topics_path, params: { saved_search_id: saved_search.id, q: "nonexistent" }
+        expect(response.body).to include(topic1.title)
+      end
+
+      it "returns 404 for non-existent saved search" do
+        get search_topics_path, params: { saved_search_id: 999999 }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "with saved_search_id and team_id" do
+      let!(:team) { create(:team, name: "CoreTeam") }
+      let!(:team_user) { create(:user, password: "secret", password_confirmation: "secret") }
+      let!(:team_template) { create(:saved_search, name: "Team Posts", query: "{{team_name}}", scope: "team") }
+      let!(:matching_topic) { create(:topic, title: "CoreTeam discussion", creator: creator1) }
+      let!(:matching_message) { create(:message, topic: matching_topic, body: "CoreTeam content", sender: creator1) }
+
+      before do
+        create(:team_member, team: team, user: team_user, role: "member")
+        attach_verified_alias(team_user, email: "teamuser@example.com")
+      end
+
+      it "resolves team template query and returns matching results" do
+        sign_in(email: "teamuser@example.com")
+        get search_topics_path, params: { saved_search_id: team_template.id, team_id: team.id }
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("CoreTeam discussion")
+      end
+    end
+
+    context "sidebar saved search links" do
+      let!(:saved_search) { create(:saved_search, name: "Global Search", query: "has:patch", scope: "global") }
+
+      it "links saved searches by id" do
+        get search_topics_path, params: { q: "PostgreSQL" }
+        expect(response.body).to include("saved_search_id=#{saved_search.id}")
+      end
+
+      it "highlights active saved search by id" do
+        get search_topics_path, params: { saved_search_id: saved_search.id }
+        expect(response.body).to include("is-active")
+      end
+    end
+
+    context "with user-scoped saved search belonging to another user" do
+      let!(:owner) { create(:user, password: "secret", password_confirmation: "secret") }
+      let!(:other_user) { create(:user, password: "secret", password_confirmation: "secret") }
+      let!(:private_search) { create(:saved_search, name: "Private", query: "PostgreSQL", scope: "user", user: owner) }
+
+      before do
+        attach_verified_alias(other_user, email: "other@example.com")
+      end
+
+      it "returns 404 when accessing another user's saved search" do
+        sign_in(email: "other@example.com")
+        get search_topics_path, params: { saved_search_id: private_search.id }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
   end
 
   describe "GET /topics/:id/latest_patchset" do

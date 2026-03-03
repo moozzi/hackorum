@@ -22,9 +22,15 @@ module Settings
       @saved_search = current_user.saved_searches.build(saved_search_params)
       @saved_search.scope = "user"
       if @saved_search.save
-        redirect_to settings_saved_searches_path, notice: "Saved search created"
+        respond_to do |format|
+          format.html { redirect_to settings_saved_searches_path, notice: "Saved search created" }
+          format.json { render json: { redirect_url: search_topics_path(saved_search_id: @saved_search.id) } }
+        end
       else
-        render :new, status: :unprocessable_entity
+        respond_to do |format|
+          format.html { render :new, status: :unprocessable_entity }
+          format.json { render json: { errors: @saved_search.errors.full_messages }, status: :unprocessable_entity }
+        end
       end
     end
 

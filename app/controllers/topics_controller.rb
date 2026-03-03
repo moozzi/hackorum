@@ -28,9 +28,24 @@ class TopicsController < ApplicationController
 
   def new_topics_count
     @viewing_since = viewing_since_param
-    base_query = topics_base_query(search_query: params[:q])
+
+    search_query = if params[:saved_search_id].present?
+      base_scope = SavedSearch.visible_to(user_signed_in? ? current_user : nil)
+      saved_search = base_scope.find(params[:saved_search_id])
+      if params[:team_id].present? && saved_search.scope_team?
+        saved_search.resolve_query(team: Team.find(params[:team_id]))
+      else
+        saved_search.resolve_query
+      end
+    else
+      params[:q]
+    end
+
+    base_query = topics_base_query(search_query: search_query)
     @new_topics_count = count_new_topics(base_query, @viewing_since)
-    refresh_path = params[:q].present? ? search_topics_path(q: params[:q]) : topics_path
+
+    refresh_params = params[:saved_search_id].present? ? { saved_search_id: params[:saved_search_id], team_id: params[:team_id] }.compact : { q: params[:q] }
+    refresh_path = search_query.present? ? search_topics_path(**refresh_params) : topics_path
 
     render partial: "new_topics_banner", locals: { count: @new_topics_count, viewing_since: @viewing_since, refresh_path: refresh_path }
   end
@@ -202,7 +217,19 @@ class TopicsController < ApplicationController
   end
 
   def search
-    @search_query = params[:q].to_s.strip
+    if params[:saved_search_id].present?
+      base_scope = SavedSearch.visible_to(user_signed_in? ? current_user : nil)
+      @saved_search = base_scope.find(params[:saved_search_id])
+      if params[:team_id].present? && @saved_search.scope_team?
+        @saved_search_team = Team.find(params[:team_id])
+        @search_query = @saved_search.resolve_query(team: @saved_search_team)
+      else
+        @search_query = @saved_search.resolve_query
+      end
+    else
+      @search_query = params[:q].to_s.strip
+    end
+
     @viewing_since = viewing_since_param
     @new_topics_count = 0
 

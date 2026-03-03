@@ -2,8 +2,28 @@
 
 = render partial: "sidebar", locals: { available_note_tags: @available_note_tags, search_query: @search_query }
 
-#new-topics-banner data-controller="new-topics-banner" data-new-topics-banner-url-value=new_topics_count_topics_path(q: @search_query, viewing_since: @viewing_since.iso8601) data-new-topics-banner-interval-ms-value="180000"
-  = render partial: "new_topics_banner", locals: { count: @new_topics_count, viewing_since: @viewing_since, refresh_path: search_topics_path(q: @search_query) }
+- search_params = @saved_search ? { saved_search_id: @saved_search.id, team_id: @saved_search_team&.id }.compact : { q: @search_query }
+
+- if @saved_search
+  .saved-search-indicator
+    i.fas.fa-bookmark
+    span
+      |  Saved search:
+      strong<>  #{@saved_search.name}
+- elsif @search_query.present? && user_signed_in?
+  .save-search-prompt data-controller="save-search" data-save-search-url-value=settings_saved_searches_path
+    .save-search-toggle data-action="click->save-search#toggle"
+      i.far.fa-bookmark
+      span  Save this search
+    .save-search-form.is-hidden data-save-search-target="form"
+      = form_with url: settings_saved_searches_path, method: :post, data: { action: "submit->save-search#submit" } do |f|
+        .save-search-fields
+          = f.text_field "saved_search[name]", placeholder: "Name for this search...", class: "save-search-input", required: true, data: { "save-search-target": "nameInput" }
+          = f.hidden_field "saved_search[query]", value: @search_query
+          = f.submit "Save", class: "save-search-button"
+
+#new-topics-banner data-controller="new-topics-banner" data-new-topics-banner-url-value=new_topics_count_topics_path(**search_params, viewing_since: @viewing_since.iso8601) data-new-topics-banner-interval-ms-value="180000"
+  = render partial: "new_topics_banner", locals: { count: @new_topics_count, viewing_since: @viewing_since, refresh_path: search_topics_path(**search_params) }
 
 - if @search_error.present?
   .search-error
@@ -44,7 +64,7 @@
       - if @topics.size == 25
         - last_topic = @topics.last
         - cursor = "#{last_topic.last_activity.iso8601}_#{last_topic.id}"
-        = turbo_frame_tag "pagination", src: search_topics_path(q: @search_query, cursor: cursor, viewing_since: @viewing_since.iso8601, longpage: @current_longpage, format: :turbo_stream), loading: :lazy do
+        = turbo_frame_tag "pagination", src: search_topics_path(**search_params, cursor: cursor, viewing_since: @viewing_since.iso8601, longpage: @current_longpage, format: :turbo_stream), loading: :lazy do
           .loading-indicator Loading more results...
       - else
         = turbo_frame_tag "pagination"
