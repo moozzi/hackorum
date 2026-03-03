@@ -47,7 +47,13 @@ module Settings
 
     def destroy
       @saved_search.destroy
-      redirect_back fallback_location: settings_saved_searches_path, notice: "Saved search deleted"
+
+      referrer = request.referer.to_s
+      if referrer.include?("saved_search_id=#{@saved_search.id}")
+        render turbo_stream: %(<turbo-stream action="visit" url="#{root_path}"></turbo-stream>)
+      else
+        redirect_back fallback_location: settings_saved_searches_path, notice: "Saved search deleted"
+      end
     end
 
     private
