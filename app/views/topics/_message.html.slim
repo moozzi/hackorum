@@ -56,10 +56,11 @@
       = turbo_frame_tag "message-body-#{message.id}", src: message_content_path(message)
     - elsif render_mode == :shell
       .message-batch-skeleton data-batch-loader-target="skeleton"
-        .skeleton-line.skeleton-line-long
-        .skeleton-line.skeleton-line-medium
-        .skeleton-line.skeleton-line-long
-        .skeleton-line.skeleton-line-short
+        - unless is_collapsed
+          .skeleton-line.skeleton-line-long
+          .skeleton-line.skeleton-line-medium
+          .skeleton-line.skeleton-line-long
+          .skeleton-line.skeleton-line-short
     - if user_signed_in?
       - notes_for_message = @notes_by_message&.[](message.id) || []
       = render "notes/note_stack", topic: @topic, message: message, notes: notes_for_message
