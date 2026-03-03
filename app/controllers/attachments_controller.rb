@@ -9,4 +9,9 @@ class AttachmentsController < ApplicationController
 
     send_data data, filename: filename, type: content_type, disposition: "attachment"
   end
+
+  def content
+    @attachment = Attachment.find(params[:id])
+    render layout: false
+  end
 end

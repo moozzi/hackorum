@@ -94,15 +94,52 @@ RSpec.describe "Topics", type: :request do
         expect(root_position).to be < reply_position
       end
 
-      it "renders patch attachments inline as expandable diff blocks" do
-        create(:attachment, :patch_file, message: root_message)
+      it "renders patch attachments with lazy-loaded content" do
+        attachment = create(:attachment, :patch_file, message: root_message)
 
         get topic_path(topic)
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Attachments:")
-        expect(response.body).to include('data-controller="diff-highlight"')
-        expect(response.body).to include("diff --git")
+        expect(response.body).to include("attachment-content-#{attachment.id}")
+        expect(response.body).not_to include("diff --git")
+      end
+    end
+
+    context "with signed-in user and read/unread messages" do
+      let!(:user) { create(:user, password: "secret", password_confirmation: "secret") }
+
+      before do
+        attach_verified_alias(user, email: "reader@example.com")
+        sign_in(email: "reader@example.com")
+      end
+
+      it "renders read messages as collapsed with turbo frame placeholder" do
+        MessageReadRange.add_range(user: user, topic: topic, start_id: root_message.id, end_id: root_message.id)
+
+        get topic_path(topic)
+        expect(response).to have_http_status(:success)
+
+        # Read message should have turbo frame placeholder, not inline body
+        expect(response.body).to include("message-body-#{root_message.id}")
+        expect(response.body).not_to include(root_message.body)
+
+        # Unread message should be rendered inline
+        expect(response.body).to include(reply_message.body)
+      end
+
+      it "renders all unread messages inline" do
+        messages = (1..25).map do |i|
+          create(:message, topic: topic, sender: creator, created_at: i.hours.ago, body: "Unread message body #{i}")
+        end
+
+        get topic_path(topic)
+        expect(response).to have_http_status(:success)
+
+        # All unread messages rendered inline
+        messages.each do |msg|
+          expect(response.body).to include(msg.body)
+        end
       end
     end
 
@@ -364,6 +401,19 @@ RSpec.describe "Topics", type: :request do
         get latest_patchset_topic_path(id: 99999)
         expect(response).to have_http_status(:not_found)
       end
+    end
+  end
+
+  describe "GET /messages/:id/content" do
+    let!(:creator) { create(:alias) }
+    let!(:topic) { create(:topic, creator: creator) }
+    let!(:message) { create(:message, topic: topic, sender: creator) }
+
+    it "returns message body in a turbo frame" do
+      get message_content_path(message)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("message-body-#{message.id}")
+      expect(response.body).to include(message.body)
     end
   end
 end

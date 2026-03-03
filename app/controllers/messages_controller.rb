@@ -16,6 +16,38 @@ class MessagesController < ApplicationController
     end
   end
 
+  def content
+    @message = Message.eager_load(
+      :sender,
+      :sender_person,
+      { sender_person: :default_alias },
+      :attachments
+    ).find(params[:id])
+    @topic = @message.topic
+
+    if user_signed_in?
+      ranges = MessageReadRange.where(user: current_user, topic: @topic)
+                               .order(:range_start_message_id)
+                               .pluck(:range_start_message_id, :range_end_message_id)
+      @read_message_ids = {}
+      @read_message_ids[@message.id] = ranges.any? { |(s, e)| s <= @message.id && @message.id <= e }
+
+      notes = Note.active.visible_to(current_user)
+                  .where(topic: @topic, message: @message)
+                  .includes(
+                    :note_tags,
+                    { author: { person: :default_alias } },
+                    { last_editor: { person: :default_alias } },
+                    { note_mentions: :mentionable }
+                  )
+                  .order(:created_at)
+      @notes_by_message = Hash.new { |h, k| h[k] = [] }
+      notes.each { |note| @notes_by_message[note.message_id] << note }
+    end
+
+    render layout: false
+  end
+
   def read
     message = Message.find(params[:id])
     MessageReadRange.add_range(user: current_user, topic: message.topic, start_id: message.id, end_id: message.id)

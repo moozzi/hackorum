@@ -119,7 +119,10 @@ Rails.application.routes.draw do
   get "/auth/:provider/callback", to: "omniauth_callbacks#google_oauth2"
 
   post "messages/:id/read", to: "messages#read", as: :read_message
-  resources :attachments, only: [ :show ]
+  get "messages/:id/content", to: "messages#content", as: :message_content
+  resources :attachments, only: [ :show ] do
+    get :content, on: :member
+  end
 
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"

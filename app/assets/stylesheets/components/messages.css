@@ -409,3 +409,30 @@ summary.attachment-info {
 .message-branch-3 .message-header { border-left-color: #10b981; }
 .message-branch-4 .message-header { border-left-color: #ef4444; }
 .message-branch-5 .message-header { border-left-color: #0ea5e9; }
+
+/* Collapse toggle */
+.message-collapse-toggle {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-1) var(--spacing-2);
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--border-radius-sm);
+  margin-left: auto;
+}
+
+.message-collapse-toggle:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+/* Collapsed state */
+.message-card.is-collapsed .message-body-wrapper {
+  display: none;
+}
+
+.message-card.is-collapsed .message-header {
+  border-bottom: none;
+}

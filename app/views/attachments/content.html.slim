@@ -1,0 +1,4 @@
+= turbo_frame_tag "attachment-content-#{@attachment.id}" do
+  pre.attachment-content
+    code data-controller=("diff-highlight" if @attachment.patch?)
+      = @attachment.decoded_body_utf8

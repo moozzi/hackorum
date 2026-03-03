@@ -1,17 +1,12 @@
 - message_classes = [("reply-message" if message.reply_to_id), ("message-branch-#{local_assigns[:branch_index]}" unless local_assigns[:branch_index].nil?)].compact.join(" ")
-.message-card id=message_dom_id(message) class=message_classes
+- render_mode = local_assigns.fetch(:render_mode, :inline)
+- is_collapsed = render_mode != :inline
+.message-card id=message_dom_id(message) class=message_classes data-controller="message-collapse" data-message-collapse-collapsed-value=is_collapsed
   - if (mid_anchor = message_id_anchor(message))
     a.message-id-anchor id=mid_anchor aria-hidden="true"
   - if local_assigns[:is_first_unread]
     a.message-id-anchor id="first-unread" aria-hidden="true"
   - display_number = number || (@message_numbers && @message_numbers[message.id])
-  - is_read = defined?(@read_message_ids) && @read_message_ids[message.id]
-  - if user_signed_in?
-    - read_data = { controller: "read-status", "read-status-message-id-value": message.id, "read-status-read-url-value": read_message_path(message, format: :json), "read-status-delay-seconds-value": read_visibility_seconds }
-    - read_classes = ["message-content", ("is-read" if is_read)].compact
-  - else
-    - read_data = {}
-    - read_classes = ["message-content"]
   .message-header
     .message-author
       .author-row
@@ -53,47 +48,11 @@
             i.fa-solid.fa-building-columns
           = link_to "https://www.postgresql.org/message-id/resend/#{ERB::Util.url_encode(message.message_id)}", target: "_blank", rel: "noopener", data: { turbo: false }, title: "Resend from postgresql.org archive", "aria-label": "Resend from postgresql.org archive" do
             i.fa-solid.fa-paper-plane
+      button.message-collapse-toggle type="button" data-action="click->message-collapse#toggle" aria-label="Toggle message"
+        i.fa-solid class=(is_collapsed ? "fa-chevron-down" : "fa-chevron-up")
 
-  .message-content class=read_classes.join(" ") data=read_data
-    - if message.subject != @topic.title && message.subject.present?
-      .message-subject = message.subject
-    
-    .message-body
-      = render_message_body(message.body)
-    
-    - if message.attachments.any?
-      .message-attachments id="message-#{message.id}-attachments"
-        h4 Attachments:
-        - message.attachments.each do |attachment|
-          - if attachment.patch? || attachment.text?
-            details.attachment
-              summary.attachment-info
-                span.attachment-summary-row
-                  span.filename = attachment.file_name
-                  span.content-type = attachment.content_type if attachment.content_type
-                  = link_to "Download", attachment_path(attachment), class: "attachment-download", download: attachment.file_name, data: { turbo: false }
-                  - if attachment.patch?
-                    - stats = attachment.diff_line_stats
-                    - if stats[:added].positive? || stats[:removed].positive?
-                      span.patchset-stats aria-label="Patch line changes" title="Lines added and removed by this patch"
-                        span.patchset-added +#{stats[:added]}
-                        span.patchset-removed -#{stats[:removed]}
-              pre.attachment-content
-                code data-controller=("diff-highlight" if attachment.patch?)
-                  = attachment.decoded_body_utf8
-          - else
-            .attachment
-              .attachment-info
-                span.filename = attachment.file_name
-                span.content-type = attachment.content_type if attachment.content_type
-                = link_to "Download", attachment_path(attachment), class: "attachment-download", download: attachment.file_name, data: { turbo: false }
-
-  - if message.import_log.present?
-    .import-metadata
-      details
-        summary Import Notes
-        pre.import-log = message.import_log
-
-  - notes_for_message = @notes_by_message&.[](message.id) || []
-  - if user_signed_in?
-    = render "notes/note_stack", topic: @topic, message: message, notes: notes_for_message
+  .message-body-wrapper
+    - if render_mode == :inline
+      = render "topics/message_body", message: message
+    - elsif render_mode == :collapsed
+      = turbo_frame_tag "message-body-#{message.id}", src: message_content_path(message)

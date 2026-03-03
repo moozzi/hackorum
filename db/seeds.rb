@@ -618,6 +618,73 @@ senders_cycle = [ bob_alias, carol_alias, dave_alias, alice_alias ]
   )
 end
 
+# Add patch attachments to every 8th message in the long thread
+long_messages.each_with_index do |msg, idx|
+  next unless (idx % 8).zero?
+  version = (idx / 8) + 1
+  patch_body = <<~PATCH
+    diff --git a/src/backend/replication/walsender.c b/src/backend/replication/walsender.c
+    index #{format('%07x', idx)}..#{format('%07x', idx + 1)} 100644
+    --- a/src/backend/replication/walsender.c
+    +++ b/src/backend/replication/walsender.c
+    @@ -#{100 + idx},6 +#{100 + idx},#{8 + version} @@
+     static void
+     WalSndLoop(WalSndSendDataCallback send_data)
+     {
+    +    /* v#{version}: improve backpressure handling */
+    +    if (MyWalSnd->sendKeepalive)
+    +    {
+    +        WalSndKeepalive(false);
+    +        MyWalSnd->sendKeepalive = false;
+    +    }
+    +#{'    +    WalSndCheckTimeOut();\n' * [version, 3].min}         /* existing wal sender loop */
+     }
+  PATCH
+
+  att = Attachment.create!(
+    message: msg,
+    file_name: "v#{version}-0001-replication-backpressure.patch",
+    content_type: "text/x-patch",
+    body: Base64.encode64(patch_body),
+    created_at: msg.created_at,
+    updated_at: msg.created_at
+  )
+  PatchFile.create!(attachment: att, filename: "src/backend/replication/walsender.c", status: "modified")
+
+  next unless version > 3
+  config_patch = <<~PATCH
+    diff --git a/src/backend/utils/misc/guc.c b/src/backend/utils/misc/guc.c
+    index #{format('%07x', idx + 100)}..#{format('%07x', idx + 101)} 100644
+    --- a/src/backend/utils/misc/guc.c
+    +++ b/src/backend/utils/misc/guc.c
+    @@ -#{200 + idx},4 +#{200 + idx},#{6 + version} @@
+     static struct config_int ConfigureNamesInt[] =
+     {
+    +    {
+    +        {"wal_sender_timeout", PGC_SIGHUP, REPLICATION_SENDING,
+    +            gettext_noop("Sets the maximum time to wait for WAL replication."),
+    +            NULL,
+    +            GUC_UNIT_MS
+    +        },
+    +        &wal_sender_timeout,
+    +        #{60000 + version * 1000}, 0, INT_MAX,
+    +        NULL, NULL, NULL
+    +    },
+         /* existing GUC entries */
+     };
+  PATCH
+
+  att2 = Attachment.create!(
+    message: msg,
+    file_name: "v#{version}-0002-wal-sender-timeout-guc.patch",
+    content_type: "text/x-patch",
+    body: Base64.encode64(config_patch),
+    created_at: msg.created_at,
+    updated_at: msg.created_at
+  )
+  PatchFile.create!(attachment: att2, filename: "src/backend/utils/misc/guc.c", status: "modified")
+end
+
 # add explicit branching replies to a single message
 branch_anchor = long_messages[9] || long_messages.first
 3.times do |idx|

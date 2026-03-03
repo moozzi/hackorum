@@ -8,9 +8,14 @@ export default class extends Controller {
 
   markAllRead(event) {
     event.preventDefault()
-    this.post(this.readAllUrlValue, () => {
-      document.querySelectorAll(".message-content").forEach(el => el.classList.add("is-read"))
+    document.querySelectorAll(".message-content").forEach(el => el.classList.add("is-read"))
+    document.querySelectorAll(".message-card").forEach(card => {
+      const controller = this.application.getControllerForElementAndIdentifier(card, "message-collapse")
+      if (controller) {
+        controller.collapsedValue = true
+      }
     })
+    this.post(this.readAllUrlValue)
   }
 
   post(url, onSuccess) {
