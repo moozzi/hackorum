@@ -39,9 +39,24 @@ export default class extends Controller {
     }
   }
 
+  findScrollAnchor() {
+    if (window.location.hash) {
+      const el = document.getElementById(window.location.hash.slice(1))
+      if (el) return el
+    }
+    for (const card of this.element.querySelectorAll('.message-card')) {
+      const rect = card.getBoundingClientRect()
+      if (rect.bottom > 0 && rect.top < window.innerHeight) return card
+    }
+    return null
+  }
+
   injectBatch(html) {
     const template = document.createElement("template")
     template.innerHTML = html
+
+    const anchor = this.findScrollAnchor()
+    const anchorTop = anchor ? anchor.getBoundingClientRect().top : null
 
     template.content.querySelectorAll("[data-message-id]").forEach(batchItem => {
       const messageId = batchItem.dataset.messageId
@@ -76,5 +91,12 @@ export default class extends Controller {
         }
       }
     })
+
+    if (anchor && anchorTop !== null) {
+      const drift = anchor.getBoundingClientRect().top - anchorTop
+      if (Math.abs(drift) > 1) {
+        window.scrollBy(0, drift)
+      }
+    }
   }
 }
