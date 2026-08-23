@@ -4,9 +4,10 @@
   .sidebar
     = render "sidebar"
 
-.reports-page
-  = render "header"
-  = render "summary_stats"
-  = render "activity_rankings"
-  = render "active_threads"
-  = render "new_contributors"
+.reports-container
+  .reports-page
+    = render "header"
+    = render "summary_stats"
+    = render "activity_rankings"
+    = render "active_threads"
+    = render "new_contributors"
