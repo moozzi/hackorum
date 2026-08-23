@@ -1,3 +1,9 @@
+.person-container {
+  max-width: var(--max-width-container);
+  margin: 0 auto;
+  padding: var(--spacing-6);
+}
+
 .person-profile {
   display: flex;
   flex-direction: column;
@@ -435,7 +441,7 @@ a.summary-box:hover {
 
 .team-badge {
   padding: 2px 8px;
-  border-radius: var(--border-radius-full);
+  border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
@@ -455,10 +461,17 @@ a.summary-box:hover {
   color: var(--color-success-text);
 }
 
+.team-container {
+  max-width: var(--max-width-container);
+  margin: 0 auto;
+  padding: var(--spacing-6);
+}
+
 .team-profile {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-6);
+  padding: var(--spacing-4);
 }
 
 .team-profile .profile-header {
