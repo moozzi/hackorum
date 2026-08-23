@@ -26,31 +26,32 @@
       - else
         p No additional aliases.
 
-.person-profile
-  .profile-header
-    .profile-avatar
-      = image_tag @primary_alias&.gravatar_url(size: 120), class: "profile-avatar-image", alt: @person.display_name
-    .profile-details
-      h1.profile-name = @person.display_name
-      - if @primary_alias
-        p.profile-email = @primary_alias.email
-      - if @person.contributor_memberships.any?
-        - badge = @primary_alias&.contributor_badge || @person.contributor_badge
-        - if badge.present?
-          span.profile-badge = badge
+.person-container
+  .person-profile
+    .profile-header
+      .profile-avatar
+        = image_tag @primary_alias&.gravatar_url(size: 120), class: "profile-avatar-image", alt: @person.display_name
+      .profile-details
+        h1.profile-name = @person.display_name
+        - if @primary_alias
+          p.profile-email = @primary_alias.email
+        - if @person.contributor_memberships.any?
+          - badge = @primary_alias&.contributor_badge || @person.contributor_badge
+          - if badge.present?
+            span.profile-badge = badge
 
-  = render "stats"
+    = render "stats"
 
-  - message_panel = capture do
-    = turbo_frame_tag "person-activity" do
-      = render "activity_filters"
-      .profile-section
-        = render "contributions"
-      = render "recent_threads"
+    - message_panel = capture do
+      = turbo_frame_tag "person-activity" do
+        = render "activity_filters"
+        .profile-section
+          = render "contributions"
+        = render "recent_threads"
 
-  - commit_frame_options = { src: person_commits_path(@profile_email, week_start: WeekCalculation.week_start_param(@week_start_day)) }
-  - commit_frame_options[:loading] = "lazy" unless @active_tab == :commits
-  - commit_panel = capture do
-    = turbo_frame_tag "person-commit-activity", **commit_frame_options
+    - commit_frame_options = { src: person_commits_path(@profile_email, week_start: WeekCalculation.week_start_param(@week_start_day)) }
+    - commit_frame_options[:loading] = "lazy" unless @active_tab == :commits
+    - commit_panel = capture do
+      = turbo_frame_tag "person-commit-activity", **commit_frame_options
 
-  = render "shared/profile/activity_tabs", active: @active_tab, panels: [{ key: :messages, label: "Email activity", body: message_panel }, { key: :commits, label: "Commit activity", body: commit_panel }]
+    = render "shared/profile/activity_tabs", active: @active_tab, panels: [{ key: :messages, label: "Email activity", body: message_panel }, { key: :commits, label: "Commit activity", body: commit_panel }]

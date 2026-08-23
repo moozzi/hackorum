@@ -21,33 +21,34 @@
       - else
         p No members yet.
 
-.team-profile
-  .profile-header
-    .profile-details
-      h1.profile-name = @team.name
-      .team-visibility
-        - case @team.visibility
-        - when "private"
-          span.team-badge.badge-private Private team
-        - when "visible"
-          span.team-badge.badge-visible Visible team
-        - when "open"
-          span.team-badge.badge-open Open team
-      p.profile-meta
-        = pluralize(@members.count, 'member')
+.team-container
+  .team-profile
+    .profile-header
+      .profile-details
+        h1.profile-name = @team.name
+        .team-visibility
+          - case @team.visibility
+          - when "private"
+            span.team-badge.badge-private Private team
+          - when "visible"
+            span.team-badge.badge-visible Visible team
+          - when "open"
+            span.team-badge.badge-open Open team
+        p.profile-meta
+          = pluralize(@members.count, 'member')
 
-  = render "stats"
+    = render "stats"
 
-  - message_panel = capture do
-    = turbo_frame_tag "team-activity" do
-      = render "activity_filters"
-      .profile-section
-        = render "contributions"
-      = render "recent_threads"
+    - message_panel = capture do
+      = turbo_frame_tag "team-activity" do
+        = render "activity_filters"
+        .profile-section
+          = render "contributions"
+        = render "recent_threads"
 
-  - commit_frame_options = { src: team_commits_path(@team.name, week_start: WeekCalculation.week_start_param(@week_start_day)) }
-  - commit_frame_options[:loading] = "lazy" unless @active_tab == :commits
-  - commit_panel = capture do
-    = turbo_frame_tag "team-commit-activity", **commit_frame_options
+    - commit_frame_options = { src: team_commits_path(@team.name, week_start: WeekCalculation.week_start_param(@week_start_day)) }
+    - commit_frame_options[:loading] = "lazy" unless @active_tab == :commits
+    - commit_panel = capture do
+      = turbo_frame_tag "team-commit-activity", **commit_frame_options
 
-  = render "shared/profile/activity_tabs", active: @active_tab, panels: [{ key: :messages, label: "Email activity", body: message_panel }, { key: :commits, label: "Commit activity", body: commit_panel }]
+    = render "shared/profile/activity_tabs", active: @active_tab, panels: [{ key: :messages, label: "Email activity", body: message_panel }, { key: :commits, label: "Commit activity", body: commit_panel }]
