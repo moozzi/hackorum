@@ -150,7 +150,7 @@
 }
 
 .sidebar-content {
-  padding: var(--spacing-3);
+  padding: var(--spacing-4) var(--spacing-3) 0 var(--spacing-3);
 }
 
 .sidebar-heading {
